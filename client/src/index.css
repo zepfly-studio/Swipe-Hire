@@ -1,0 +1,112 @@
+@import "tailwindcss";
+
+@theme {
+  --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
+
+  --color-ink-950: #07070d;
+  --color-ink-900: #0d0d17;
+  --color-ink-800: #14141f;
+  --color-ink-700: #1d1d2c;
+  --color-ink-600: #2a2a3d;
+
+  --color-brand-400: #ff6f8a;
+  --color-brand-500: #ff4d6d;
+  --color-brand-600: #e8385a;
+  --color-violet-brand: #7c5cff;
+}
+
+/* The site's theme (data-theme="light" is set on <html> in index.html). The components
+   were written dark-first, so here surfaces go light and "white" (used for text, borders
+   and tints everywhere) becomes near-black, flipping the whole UI without touching markup. */
+:root[data-theme='light'] {
+  color-scheme: light;
+  --color-ink-950: #f5f5fa;
+  --color-ink-900: #ffffff;
+  --color-ink-800: #f0f0f6;
+  --color-ink-700: #e6e6ef;
+  --color-ink-600: #d6d6e3;
+  --color-white: #15151f;
+  --color-brand-400: #e23a62;
+  --color-brand-500: #ec3d64;
+  --color-brand-600: #d42a52;
+  --color-violet-brand: #6d4aff;
+  /* Status colours made darker so they stay readable on white. */
+  --color-emerald-200: #047857;
+  --color-emerald-300: #047857;
+  --color-emerald-400: #059669;
+  --color-amber-100: #92400e;
+  --color-amber-200: #b45309;
+  --color-amber-300: #b45309;
+  --color-sky-300: #0369a1;
+  --color-sky-400: #0284c7;
+  --color-violet-300: #6d28d9;
+}
+/* Text on the coloured gradient (buttons, avatars, badges) stays white.
+   ~= matches whole class names only, so hover:bg-brand-500 buttons are left alone. */
+:root[data-theme='light'] :is(.btn-primary, [class~='from-brand-500'], [class~='bg-brand-500'], .bg-red-500) {
+  color: #fff;
+}
+:root[data-theme='light'] [class*='color-scheme:dark'] {
+  color-scheme: light;
+}
+
+@layer base {
+  html {
+    color-scheme: dark;
+    -webkit-tap-highlight-color: transparent;
+  }
+  body {
+    transition: background-color 0.3s ease;
+  }
+  body {
+    @apply min-h-dvh bg-ink-950 font-sans text-white antialiased;
+  }
+  button {
+    cursor: pointer;
+  }
+  button:disabled {
+    cursor: not-allowed;
+  }
+}
+
+@layer components {
+  .text-gradient {
+    @apply bg-linear-to-r from-brand-500 to-violet-brand bg-clip-text text-transparent;
+  }
+  .glass {
+    @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
+  }
+  .input {
+    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white outline-none transition placeholder:text-white/30;
+  }
+  .input:focus,
+  .input:focus-within {
+    @apply border-brand-500/60 bg-white/[0.06] ring-4 ring-brand-500/10;
+  }
+  .btn-primary,
+  .btn-ghost {
+    @apply inline-flex items-center justify-center gap-2 rounded-xl px-5 py-3 text-[15px] font-semibold transition disabled:opacity-50;
+  }
+  .btn-primary {
+    @apply bg-linear-to-r from-brand-500 to-violet-brand text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40;
+  }
+  .btn-ghost {
+    @apply border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white;
+  }
+  .chip {
+    @apply inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/70;
+  }
+  .bg-grid {
+    background-image:
+      linear-gradient(to right, color-mix(in srgb, var(--color-white) 60%, transparent) 1px, transparent 1px),
+      linear-gradient(to bottom, color-mix(in srgb, var(--color-white) 60%, transparent) 1px, transparent 1px);
+    background-size: 48px 48px;
+    mask-image: radial-gradient(ellipse at center, black 30%, transparent 75%);
+  }
+  .no-scrollbar {
+    scrollbar-width: none;
+  }
+  .no-scrollbar::-webkit-scrollbar {
+    display: none;
+  }
+}

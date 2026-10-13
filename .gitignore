@@ -1,0 +1,44 @@
+# ---- Dependencies (reinstall with: npm run install:all) ----
+node_modules/
+
+# ---- Build output ----
+dist/
+build/
+*.tsbuildinfo
+.vite/
+
+# ---- Secrets: never commit real keys. Commit the .env.example files instead. ----
+.env
+.env.*
+!.env.example
+
+# ---- User data from local development ----
+# Resumes, videos, photos and logos people uploaded (private data).
+server/uploads/
+# Local MongoDB database files (npm run dev:db).
+server/.data/
+
+# ---- Logs ----
+logs/
+*.log
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+pnpm-debug.log*
+
+# ---- Test output ----
+coverage/
+.nyc_output/
+
+# ---- Editors and OS files ----
+.vscode/*
+!.vscode/extensions.json
+.idea/
+*.swp
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# ---- Hosting tools ----
+.vercel/
+.netlify/
