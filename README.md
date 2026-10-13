@@ -8,7 +8,8 @@ Companies swipe through candidate resumes and 5–15 second intro videos. Swipe 
 ## Run locally
 
 ```bash
-npm run install:all     # first time only
+npm run install:all     # first time only: installs everything
+npm run setup           # first time only: creates server/.env with a new secret key
 npm run dev             # API on :5000, website on http://localhost:5173
 ```
 

@@ -3,6 +3,7 @@
   "private": true,
   "scripts": {
     "install:all": "npm install && npm install --prefix server && npm install --prefix client",
+    "setup": "node scripts/setup.mjs",
     "dev": "concurrently -n db,api,web -c gray,magenta,cyan \"npm run dev:db --prefix server\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "build": "npm run build --prefix client",
     "start": "npm start --prefix server"
