@@ -105,7 +105,10 @@ function Form({ value, onApply, onClose, searches, onSaveSearch, onToggleAlerts,
             <Input type="number" min={0} inputMode="decimal" value={f.maxExp} onChange={set('maxExp')} placeholder="Any" />
           </Field>
         </div>
-        <Field label="Max expected salary (LPA)" hint={salaryHint(f.maxSalary)}>
+        <Field
+          label="Your budget (max LPA)"
+          hint={f.maxSalary === '' ? 'Shows candidates whose expected range starts at or below this, plus anyone open to negotiate' : salaryHint(f.maxSalary)}
+        >
           <Input type="number" min={0} inputMode="decimal" value={f.maxSalary} onChange={set('maxSalary')} placeholder="Any" />
         </Field>
         <Field label="Notice period" as="div">

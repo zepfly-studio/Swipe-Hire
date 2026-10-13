@@ -11,6 +11,14 @@ const userSchema = new mongoose.Schema(
     companyId: { type: mongoose.Schema.Types.ObjectId, ref: 'User', index: true },
     avatarUrl: String, // profile photo
     phone: String, // recruiters' own contact number (candidates keep theirs on the profile)
+    // Proven by a 6-digit code sent to the email (or by accepting a team invite email).
+    emailVerified: { type: Boolean, default: false },
+    // Current code (hashed) plus daily send/failure counters, so codes can't be brute-forced.
+    // `dev` holds the plain code only in local development without email, for testing.
+    emailOtp: {
+      type: { hash: String, expires: Date, sentAt: Date, tries: Number, sends: Number, fails: Number, windowStart: Date, dev: String },
+      select: false,
+    },
     // Bumped on password change / "log out everywhere": every older login stops working.
     tokenVersion: { type: Number, default: 0, select: false },
   },

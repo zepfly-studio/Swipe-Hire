@@ -17,6 +17,8 @@ No MongoDB install is needed for development: `npm run dev` also starts a local 
 
 `shared/taxonomy.js` holds the skill / role / degree / city lists used by both the website (suggestions) and the server (resume auto-fill), so deploy the repo as a whole.
 
+New accounts must verify their email with a 6-digit code. Without email settings in `server/.env` (local development) the code is shown on the verify screen instead of being emailed; accounts that existed before this feature count as verified.
+
 Payments run in **demo mode** (no real money) until Razorpay keys are added to `server/.env`.
 
 ## Configuration (`server/.env`)

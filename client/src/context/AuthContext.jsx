@@ -6,6 +6,7 @@ const AuthContext = createContext(null);
 
 export function homePath(user, profile) {
   if (!user) return '/auth';
+  if (user.emailVerified === false) return '/verify-email';
   if (user.role === 'candidate') return profile?.step >= 3 ? '/candidate' : '/candidate/onboarding';
   return profile?.completed ? '/company/swipe' : '/company/onboarding';
 }

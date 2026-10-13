@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import fs from 'node:fs';
-import { auth, requireRole } from '../middleware/auth.js';
+import { auth, requireRole, requireVerified } from '../middleware/auth.js';
 import { resumeUpload, videoUpload, publicPath, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
@@ -16,7 +16,7 @@ import { cleanList } from '../utils/pick.js';
 import { num, salary, text, requireFields, stripUndefined } from '../utils/fields.js';
 
 const router = Router();
-router.use(auth, requireRole('candidate'));
+router.use(auth, requireVerified, requireRole('candidate'));
 
 router.put('/profile', async (req, res) => {
   const b = req.body ?? {};
@@ -168,6 +168,13 @@ router.get('/stats', async (req, res) => {
     .filter(Boolean);
 
   res.json({ shortlistedBy, hiddenCount, viewedCount, wishlistedCount });
+});
+
+// "I'm still looking": keeps the profile at the top of company feeds for another ACTIVE_DAYS.
+router.post('/active', async (req, res) => {
+  const profile = await CandidateProfile.findOneAndUpdate({ user: req.user.id }, { activeAt: new Date() }, { returnDocument: 'after' }).lean();
+  if (!profile) throw new HttpError(404, 'Profile not found');
+  res.json({ profile: withSignedFiles(profile) });
 });
 
 const WORK_MODES = ['onsite', 'remote', 'hybrid'];

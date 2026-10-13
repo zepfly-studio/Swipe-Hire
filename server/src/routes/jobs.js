@@ -1,13 +1,13 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { auth, requireRole } from '../middleware/auth.js';
+import { auth, requireRole, requireVerified } from '../middleware/auth.js';
 import { Job } from '../models/Job.js';
 import { Swipe } from '../models/Swipe.js';
 import { HttpError } from '../utils/HttpError.js';
 import { jobFields, publicJob } from '../utils/jobs.js';
 
 const router = Router();
-router.use(auth, requireRole('company'));
+router.use(auth, requireVerified, requireRole('company'));
 
 const MAX_OPEN_JOBS = 25;
 

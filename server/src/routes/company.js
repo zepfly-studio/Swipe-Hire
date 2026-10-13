@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
-import { auth, requireRole } from '../middleware/auth.js';
+import { auth, requireRole, requireVerified } from '../middleware/auth.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
 import { Job } from '../models/Job.js';
@@ -19,13 +19,14 @@ import { num, text, requireFields, stripUndefined } from '../utils/fields.js';
 import { imageUpload, publicPath, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { feedFilters, normalizeFilters, toCard } from '../utils/candidates.js';
 import { salaryFits, salaryFitWhere } from '../utils/match.js';
+import { feedRank } from '../utils/activity.js';
 import { jobFields, publicJob, resolveJob } from '../utils/jobs.js';
 import { notify } from '../utils/notify.js';
 import { sendMail, mailEnabled } from '../utils/mailer.js';
 import { config } from '../config/index.js';
 
 const router = Router();
-router.use(auth, requireRole('company'));
+router.use(auth, requireVerified, requireRole('company'));
 
 async function getCompany(req) {
   const company = await CompanyProfile.findOne({ user: req.user.companyId }).lean();
@@ -150,15 +151,22 @@ router.get('/feed', async (req, res) => {
     $and: [feedFilters(req.query), salaryFitWhere(job)],
   })
     .populate('user', 'name avatarUrl')
-    .sort({ updatedAt: -1 })
+    .sort({ activeAt: -1 })
     .limit(500)
     .lean();
 
+  // Active candidates first (stale ones, who haven't confirmed "still looking", sink to the
+  // bottom), then best match, with a small boost for people who joined this week.
+  const now = Date.now();
   const candidates = profiles
     .filter((p) => p.user)
-    .map((p) => toCard(p, job, { wishlisted: wish.has(String(p.user._id)) }))
-    .sort((a, b) => b.matchScore - a.matchScore)
-    .slice(0, limit);
+    .map((p) => {
+      const card = toCard(p, job, { wishlisted: wish.has(String(p.user._id)) });
+      return { card, rank: feedRank(p, card.matchScore, now) };
+    })
+    .sort((a, b) => a.rank.stale - b.rank.stale || b.rank.score - a.rank.score)
+    .slice(0, limit)
+    .map((x) => x.card);
 
   res.json({ candidates, swipesLeft: company.swipesLeft, job: publicJob(job) });
 });

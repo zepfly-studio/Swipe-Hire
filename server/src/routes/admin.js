@@ -12,8 +12,9 @@ const router = Router();
 export const isAdminEmail = (email) => config.adminEmails.includes(String(email).toLowerCase());
 
 router.use(auth, async (req, _res, next) => {
-  const user = await User.findById(req.user.id).select('email').lean();
-  if (!user || !isAdminEmail(user.email)) throw new HttpError(403, 'Admins only');
+  // A verified email is required, so nobody can claim an admin address by signing up with it.
+  const user = await User.findById(req.user.id).select('email emailVerified').lean();
+  if (!user || !isAdminEmail(user.email) || user.emailVerified === false) throw new HttpError(403, 'Admins only');
   next();
 });
 

@@ -1,3 +1,5 @@
+import { User } from '../models/User.js';
+import { CandidateProfile } from '../models/CandidateProfile.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
 import { Job } from '../models/Job.js';
 import { Swipe } from '../models/Swipe.js';
@@ -28,4 +30,10 @@ export async function migrate() {
   }
   // Drops the old one-swipe-per-candidate index and builds the per-job one.
   await Swipe.syncIndexes();
+
+  // Accounts created before email verification existed keep working.
+  await User.collection.updateMany({ emailVerified: { $exists: false } }, { $set: { emailVerified: true } });
+
+  // Candidates from before the "still looking" check count as active since their last update.
+  await CandidateProfile.collection.updateMany({ activeAt: { $exists: false } }, [{ $set: { activeAt: '$updatedAt' } }]);
 }

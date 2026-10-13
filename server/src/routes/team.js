@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
-import { auth, requireOwner, requireRole } from '../middleware/auth.js';
+import { auth, requireOwner, requireRole, requireVerified } from '../middleware/auth.js';
 import { User } from '../models/User.js';
 import { TeamInvite } from '../models/TeamInvite.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
@@ -10,7 +10,7 @@ import { sendMail, mailEnabled } from '../utils/mailer.js';
 import { config } from '../config/index.js';
 
 const router = Router();
-router.use(auth, requireRole('company'));
+router.use(auth, requireVerified, requireRole('company'));
 
 const MAX_TEAM = 10;
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;

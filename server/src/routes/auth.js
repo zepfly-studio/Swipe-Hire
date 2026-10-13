@@ -1,6 +1,7 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import rateLimit from 'express-rate-limit';
+import crypto from 'node:crypto';
 import { User } from '../models/User.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
@@ -10,6 +11,8 @@ import { hashToken } from './team.js';
 import { HttpError } from '../utils/HttpError.js';
 import { signUrl, withSignedFiles } from '../utils/signedUrl.js';
 import { isAdminEmail } from './admin.js';
+import { sendMail, mailEnabled } from '../utils/mailer.js';
+import { config } from '../config/index.js';
 
 const router = Router();
 
@@ -40,7 +43,8 @@ const publicUser = (u) => ({
   name: u.name,
   email: u.email,
   role: u.role,
-  isAdmin: isAdminEmail(u.email),
+  emailVerified: u.emailVerified !== false,
+  isAdmin: isAdminEmail(u.email) && u.emailVerified !== false,
   avatarUrl: signUrl(u.avatarUrl),
   phone: u.phone,
   ...(u.role === 'company' && { companyId: companyIdOf(u), isOwner: !u.companyId }),
@@ -81,6 +85,8 @@ router.post('/accept-invite', fromApp, limiter, async (req, res) => {
     password: await bcrypt.hash(password, 10),
     role: 'company',
     companyId: invite.company,
+    // The invite link was emailed to this address, which proves they own it.
+    emailVerified: true,
   });
   res.status(201).json({ ...startSession(req, res, user), ...(await session(user)) });
 });
@@ -117,6 +123,66 @@ router.post('/login', fromApp, limiter, async (req, res) => {
     throw new HttpError(401, 'Incorrect email or password');
   }
   res.json({ ...startSession(req, res, user), ...(await session(user)) });
+});
+
+// ---- Email verification: a 6-digit code sent to the account's email ----
+const OTP_TTL = 15 * 60 * 1000;
+const OTP_COOLDOWN = 60 * 1000;
+const OTP_WINDOW = 24 * 60 * 60 * 1000;
+const OTP_MAX_SENDS = 8; // per day
+const OTP_MAX_FAILS = 15; // per day
+const hashCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
+// Local development without an email service: the code is shown on screen instead.
+const showCodeOnScreen = () => !mailEnabled && !config.isProd;
+
+// Sends a code, or reuses the one sent less than a minute ago (e.g. the page was refreshed).
+router.post('/email/send', auth, async (req, res) => {
+  const user = await User.findById(req.user.id).select('+emailOtp');
+  if (user.emailVerified !== false) return res.json({ verified: true });
+  const prev = user.emailOtp;
+  const now = Date.now();
+  if (prev?.sentAt && now - prev.sentAt < OTP_COOLDOWN && prev.expires > now) {
+    return res.json({ sentTo: user.email, retryIn: Math.ceil((OTP_COOLDOWN - (now - prev.sentAt)) / 1000), devCode: prev.dev || undefined });
+  }
+  const sameDay = prev?.windowStart && now - prev.windowStart < OTP_WINDOW;
+  const usage = sameDay ? { sends: prev.sends || 0, fails: prev.fails || 0, windowStart: prev.windowStart } : { sends: 0, fails: 0, windowStart: new Date() };
+  if (usage.sends >= OTP_MAX_SENDS || usage.fails >= OTP_MAX_FAILS) {
+    throw new HttpError(429, 'Too many codes requested today. Please try again tomorrow.');
+  }
+  const code = String(crypto.randomInt(100000, 1000000));
+  user.emailOtp = {
+    hash: hashCode(code),
+    expires: new Date(now + OTP_TTL),
+    sentAt: new Date(now),
+    tries: 0,
+    ...usage,
+    sends: usage.sends + 1,
+    dev: showCodeOnScreen() ? code : undefined,
+  };
+  await user.save();
+  await sendMail({
+    to: user.email,
+    subject: `${code} is your Swipe Hire code`,
+    text: `Hi ${user.name.split(' ')[0]},\n\nYour Swipe Hire verification code is ${code}. It expires in 15 minutes.\n\nIf you didn't create a Swipe Hire account, you can ignore this email.\n\n— Team Swipe Hire`,
+  });
+  res.json({ sentTo: user.email, retryIn: OTP_COOLDOWN / 1000, devCode: showCodeOnScreen() ? code : undefined });
+});
+
+router.post('/email/verify', auth, async (req, res) => {
+  const user = await User.findById(req.user.id).select('+emailOtp');
+  if (user.emailVerified !== false) return res.json(await session(user));
+  const otp = user.emailOtp;
+  if (!otp?.hash || otp.expires < new Date()) throw new HttpError(400, 'This code has expired. Tap "Send a new code".', { field: 'code' });
+  if ((otp.fails || 0) >= OTP_MAX_FAILS) throw new HttpError(429, 'Too many wrong attempts today. Please try again tomorrow.');
+  if ((otp.tries || 0) >= 5) throw new HttpError(429, 'Too many wrong attempts. Tap "Send a new code".', { field: 'code' });
+  if (hashCode(String(req.body?.code ?? '').trim()) !== otp.hash) {
+    await User.updateOne({ _id: user._id }, { $inc: { 'emailOtp.tries': 1, 'emailOtp.fails': 1 } });
+    throw new HttpError(400, 'Wrong code, please check and try again', { field: 'code' });
+  }
+  user.emailVerified = true;
+  user.emailOtp = undefined;
+  await user.save();
+  res.json(await session(user));
 });
 
 // No auth needed: an expired login must still be able to clear its cookie.

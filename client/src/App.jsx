@@ -25,6 +25,7 @@ const JoinPage = lazy(() => import('./pages/JoinPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const CompanyProfilePage = lazy(() => import('./pages/company/CompanyProfilePage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
+const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 
 function isOnboarded(user, profile) {
   return user.role === 'candidate' ? profile?.step >= 3 : Boolean(profile?.completed);
@@ -34,9 +35,19 @@ function Guard({ role, onboarded, admin, children }) {
   const { loading, user, profile } = useAuth();
   if (loading) return <Spinner className="min-h-dvh" />;
   if (!user) return <Navigate to="/auth" replace />;
+  if (user.emailVerified === false) return <Navigate to="/verify-email" replace />;
   if (role && user.role !== role) return <Navigate to={homePath(user, profile)} replace />;
   if (admin && !user.isAdmin) return <Navigate to={homePath(user, profile)} replace />;
   if (onboarded && !isOnboarded(user, profile)) return <Navigate to={homePath(user, profile)} replace />;
+  return children;
+}
+
+// Only for a signed-in account whose email isn't verified yet.
+function Unverified({ children }) {
+  const { loading, user, profile } = useAuth();
+  if (loading) return <Spinner className="min-h-dvh" />;
+  if (!user) return <Navigate to="/auth" replace />;
+  if (user.emailVerified !== false) return <Navigate to={homePath(user, profile)} replace />;
   return children;
 }
 
@@ -90,6 +101,7 @@ export default function App() {
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<GuestOnly><Page><AuthPage /></Page></GuestOnly>} />
+        <Route path="/verify-email" element={<Unverified><Page><VerifyEmailPage /></Page></Unverified>} />
 
         <Route path="/candidate/onboarding" element={<Guard role="candidate"><Page><CandidateOnboarding /></Page></Guard>} />
         <Route path="/candidate" element={<Guard role="candidate" onboarded><Page><CandidateHome /></Page></Guard>} />

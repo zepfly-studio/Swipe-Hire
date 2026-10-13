@@ -1,7 +1,7 @@
 import crypto from 'node:crypto';
 import { Router } from 'express';
 import Razorpay from 'razorpay';
-import { auth, requireRole } from '../middleware/auth.js';
+import { auth, requireRole, requireVerified } from '../middleware/auth.js';
 import { config, PLANS, razorpayEnabled, demoPayments } from '../config/index.js';
 import { Payment } from '../models/Payment.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
@@ -53,7 +53,7 @@ export async function razorpayWebhook(req, res) {
   res.json({ ok: true });
 }
 
-router.use(auth, requireRole('company'));
+router.use(auth, requireVerified, requireRole('company'));
 
 router.post('/order', async (req, res) => {
   const plan = PLANS.find((p) => p.id === req.body?.planId);

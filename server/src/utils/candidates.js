@@ -40,7 +40,12 @@ export function feedFilters(q) {
     if (f.minExp !== null) where.experienceYears.$gte = f.minExp;
     if (f.maxExp !== null) where.experienceYears.$lte = f.maxExp;
   }
-  if (f.maxSalary !== null) where.expectedSalary = { $lte: f.maxSalary };
+  // "Max salary": the candidate's range must start at or below it (a 4–6 LPA candidate
+  // matches "max 5"), or the candidate is open to negotiate.
+  if (f.maxSalary !== null) {
+    const salary = { $or: [{ expectedSalary: { $lte: f.maxSalary } }, { salaryNegotiable: true }] };
+    where.$and = [...(where.$and ?? []), salary];
+  }
   if (f.notice.length) where.noticePeriod = { $in: f.notice };
   if (f.skills.length) where.skills = { $in: f.skills.map((sk) => new RegExp(`^${escapeRegex(sk)}$`, 'i')) };
   return where;

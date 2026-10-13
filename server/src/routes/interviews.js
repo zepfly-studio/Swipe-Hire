@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import crypto from 'node:crypto';
 import mongoose from 'mongoose';
-import { auth, requireRole } from '../middleware/auth.js';
+import { auth, requireRole, requireVerified } from '../middleware/auth.js';
 import { Interview } from '../models/Interview.js';
 import { Swipe } from '../models/Swipe.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
@@ -15,7 +15,7 @@ import { text } from '../utils/fields.js';
 import { signUrl } from '../utils/signedUrl.js';
 
 const router = Router();
-router.use(auth);
+router.use(auth, requireVerified);
 
 const fmt = (d) =>
   new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });

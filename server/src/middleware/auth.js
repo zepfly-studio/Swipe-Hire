@@ -60,7 +60,7 @@ export async function auth(req, _res, next) {
     throw new HttpError(401, 'Your session has expired, please log in again');
   }
   // Looked up every time so a removed team member is logged out immediately.
-  const user = await User.findById(payload.sub).select('role companyId +tokenVersion').lean();
+  const user = await User.findById(payload.sub).select('role companyId emailVerified +tokenVersion').lean();
   if (!user) throw new HttpError(401, 'Your account no longer exists, please log in again');
   if ((payload.v || 0) !== (user.tokenVersion || 0)) throw new HttpError(401, 'Your session has expired, please log in again');
   req.user = {
@@ -68,9 +68,16 @@ export async function auth(req, _res, next) {
     role: user.role,
     companyId: user.role === 'company' ? companyIdOf(user) : undefined,
     isOwner: user.role === 'company' && !user.companyId,
+    emailVerified: user.emailVerified !== false,
   };
   next();
 }
+
+// Everything except login/account basics needs a verified email first.
+export const requireVerified = (req, _res, next) => {
+  if (!req.user.emailVerified) throw new HttpError(403, 'Please verify your email first', { code: 'EMAIL_NOT_VERIFIED' });
+  next();
+};
 
 export const requireRole = (role) => (req, _res, next) => {
   if (req.user.role !== role) throw new HttpError(403, 'You do not have access to this');

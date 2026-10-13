@@ -12,6 +12,7 @@ import CompanyModal from '../../components/CompanyModal';
 import { CandidateDetails, IntroVideo, SectionTitle } from '../../components/CandidateDetails';
 import { Button, MultiChipSelect, Spinner, StagePill, VerifiedBadge } from '../../components/ui';
 import Illustration from '../../components/Illustration';
+import ActivityMeter from '../../components/ActivityMeter';
 import { useAuth } from '../../context/AuthContext';
 import { api, cx, errorMessage } from '../../lib/api';
 import { CITIES, JOB_TYPE_OPTIONS, WORK_MODE_OPTIONS } from '../../lib/options';
@@ -158,6 +159,7 @@ export default function CandidateHome() {
 
       <div className="mt-8 grid gap-6 lg:grid-cols-[1fr_400px]">
         <div className="space-y-6">
+          {live && <ActivityMeter profile={profile} onProfile={setProfile} />}
           <ProfileStrength profile={profile} />
           <section className="glass rounded-3xl p-5 sm:p-6">
             <SectionTitle>Companies that shortlisted you</SectionTitle>

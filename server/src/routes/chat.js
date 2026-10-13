@@ -1,7 +1,7 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
 import rateLimit from 'express-rate-limit';
-import { auth } from '../middleware/auth.js';
+import { auth, requireVerified } from '../middleware/auth.js';
 import { Message } from '../models/Message.js';
 import { Swipe } from '../models/Swipe.js';
 import { User } from '../models/User.js';
@@ -14,7 +14,7 @@ import { notify, notifyCompany } from '../utils/notify.js';
 import { signUrl } from '../utils/signedUrl.js';
 
 const router = Router();
-router.use(auth);
+router.use(auth, requireVerified);
 
 const sendLimiter = rateLimit({
   windowMs: 60 * 1000,
@@ -138,38 +138,77 @@ router.get('/:otherId', async (req, res) => {
   });
 });
 
-router.post('/:otherId', sendLimiter, async (req, res) => {
-  const text = String(req.body?.text ?? '').trim();
+function messageText(body) {
+  const text = String(body?.text ?? '').trim();
   if (!text) throw new HttpError(400, 'Message cannot be empty');
   if (text.length > 2000) throw new HttpError(400, 'Message is too long (max 2000 characters)');
-  const { pair, otherId } = await shortlistedPair(req.user, req.params.otherId);
-  const isCompany = req.user.role === 'company';
+  return text;
+}
 
-  const msg = await Message.create({ ...pair, sender: req.user.id, text });
+// Company -> many shortlisted candidates at once (e.g. everyone shortlisted for a job).
+// Each one gets their own chat message, plus the usual in-app and email notification.
+const bulkLimiter = rateLimit({
+  windowMs: 60 * 60 * 1000,
+  limit: 20,
+  keyGenerator: (req) => req.user.id,
+  message: { message: 'You have sent a lot of group messages, please try again in an hour' },
+});
+const MAX_BULK = 50;
+
+router.post('/bulk', bulkLimiter, async (req, res) => {
+  if (req.user.role !== 'company') throw new HttpError(403, 'Only companies can message several candidates at once');
+  const text = messageText(req.body);
+  const ids = [...new Set((Array.isArray(req.body?.candidateIds) ? req.body.candidateIds : []).map(String))];
+  if (!ids.length) throw new HttpError(400, 'Choose at least one candidate');
+  if (ids.length > MAX_BULK) throw new HttpError(400, `You can message up to ${MAX_BULK} candidates at once`);
+  let sent = 0;
+  const skipped = [];
+  for (const id of ids) {
+    try {
+      await deliver(req.user, id, text);
+      sent += 1;
+    } catch (err) {
+      if (!(err instanceof HttpError)) throw err;
+      skipped.push(id); // not shortlisted by us, or an invalid id
+    }
+  }
+  res.status(201).json({ sent, skipped });
+});
+
+router.post('/:otherId', sendLimiter, async (req, res) => {
+  const msg = await deliver(req.user, req.params.otherId, messageText(req.body));
+  res.status(201).json({ message: { id: msg._id, text: msg.text, mine: true, at: msg.createdAt, read: false } });
+});
+
+// Saves one message and notifies the other side.
+async function deliver(user, toId, text) {
+  const { pair, otherId } = await shortlistedPair(user, toId);
+  const isCompany = user.role === 'company';
+
+  const msg = await Message.create({ ...pair, sender: user.id, text });
 
   // The first company message moves the candidate to "contacted" (for every job they're shortlisted for).
   if (isCompany) await Swipe.updateMany({ ...pair, action: 'right', stage: 'shortlisted' }, { stage: 'contacted' });
 
   // One unread "new message" notification per conversation is enough; don't spam.
-  const from = isCompany ? pair.company : req.user.id;
+  const from = isCompany ? pair.company : user.id;
   const pending = await Notification.exists({ user: isCompany ? otherId : pair.company, from, type: 'message', readAt: null });
   if (!pending) {
     const senderName = isCompany
       ? (await CompanyProfile.findOne({ user: pair.company }).lean())?.companyName
-      : (await User.findById(req.user.id).select('name').lean())?.name;
+      : (await User.findById(user.id).select('name').lean())?.name;
     const payload = {
       type: 'message',
       title: `New message from ${senderName || 'Swipe Hire'}`,
       body: text.length > 120 ? `${text.slice(0, 117)}…` : text,
-      link: `/messages?with=${isCompany ? pair.company : req.user.id}`,
+      link: `/messages?with=${isCompany ? pair.company : user.id}`,
       from,
       email: true,
     };
     if (isCompany) notify(otherId, payload);
     else notifyCompany(pair.company, payload);
   }
-
-  res.status(201).json({ message: { id: msg._id, text: msg.text, mine: true, at: msg.createdAt, read: false } });
-});
+  return msg;
+}
 
 export default router;

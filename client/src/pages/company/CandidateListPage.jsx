@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BadgeCheck, Briefcase, CalendarPlus, ClipboardList, Copy, FileText, Heart, Layers, Mail, MapPin, MessageCircle, Phone, Users, X } from 'lucide-react';
+import { BadgeCheck, Briefcase, CalendarPlus, Check, ClipboardList, Copy, FileText, Heart, Layers, Mail, MapPin, MessageCircle, MessagesSquare, Phone, Users, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CompanyShell from '../../components/CompanyShell';
 import Modal from '../../components/Modal';
@@ -9,6 +9,7 @@ import Avatar from '../../components/Avatar';
 import ResumeViewer from '../../components/ResumeViewer';
 import ScheduleInterviewModal from '../../components/ScheduleInterviewModal';
 import SendTaskModal from '../../components/SendTaskModal';
+import GroupMessageModal from '../../components/GroupMessageModal';
 import { TaskCard } from '../TasksPage';
 import { CandidateDetails, MatchBadge, expLabel } from '../../components/CandidateDetails';
 import { Button, ChipSelect, Spinner, StagePill, STAGE_STYLES, Textarea } from '../../components/ui';
@@ -262,10 +263,32 @@ export default function CandidateListPage({ kind }) {
   const [stageFilter, setStageFilter] = useState('all');
   const [scheduling, setScheduling] = useState(null);
   const [tasking, setTasking] = useState(null);
+  // Group message: candidate ids ticked on this page, and the people the composer is open for.
+  const [selected, setSelected] = useState(() => new Set());
+  const [groupTo, setGroupTo] = useState(null);
   const [taskVersion, setTaskVersion] = useState(0);
   const isPipeline = kind === 'shortlisted';
   const counts = items ? Object.fromEntries(STAGE_OPTIONS.map((s) => [s.value, items.filter((c) => c.stage === s.value).length])) : {};
   const visibleItems = isPipeline && stageFilter !== 'all' ? items?.filter((c) => c.stage === stageFilter) : items;
+  // One person can be shortlisted for two jobs (two cards); they get the message once.
+  const uniqueById = (list) => [...new Map(list.map((c) => [c.id, c])).values()];
+  const visiblePeople = uniqueById(visibleItems ?? []);
+  const allVisibleSelected = visiblePeople.length > 0 && visiblePeople.every((c) => selected.has(c.id));
+  const toggle = (id) =>
+    setSelected((cur) => {
+      const next = new Set(cur);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  const openGroupMessage = () => {
+    const chosen = uniqueById((items ?? []).filter((c) => selected.has(c.id)));
+    setGroupTo(chosen.length ? chosen : visiblePeople);
+  };
+  const onGroupSent = (ids) => {
+    setItems((list) => list.map((c) => (ids.includes(c.id) && c.stage === 'shortlisted' ? { ...c, stage: 'contacted' } : c)));
+    setSelected(new Set());
+  };
 
   return (
     <CompanyShell>
@@ -341,6 +364,31 @@ export default function CandidateListPage({ kind }) {
         <p className="py-16 text-center text-white/45">Nobody in this stage yet.</p>
       )}
 
+      {isPipeline && visiblePeople.length > 0 && (
+        <div className="mb-4 flex flex-wrap items-center justify-between gap-3 rounded-2xl bg-white/[0.04] px-4 py-3 ring-1 ring-white/5">
+          <label className="flex cursor-pointer items-center gap-3 text-sm font-semibold">
+            <input
+              type="checkbox"
+              checked={allVisibleSelected}
+              onChange={() => setSelected(allVisibleSelected ? new Set() : new Set(visiblePeople.map((c) => c.id)))}
+              className="h-5 w-5 accent-brand-500"
+            />
+            {selected.size > 0 ? `${selected.size} selected` : 'Select all'}
+          </label>
+          <div className="flex items-center gap-2">
+            {selected.size > 0 && (
+              <button onClick={() => setSelected(new Set())} className="btn-ghost px-3 py-2 text-sm">
+                Clear
+              </button>
+            )}
+            <button onClick={openGroupMessage} className="btn-primary px-4 py-2 text-sm">
+              <MessagesSquare size={16} />
+              {selected.size > 0 ? `Message ${selected.size} selected` : `Message all (${visiblePeople.length})`}
+            </button>
+          </div>
+        </div>
+      )}
+
       {visibleItems?.length > 0 && (
         <motion.div layout className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
           <AnimatePresence>
@@ -356,9 +404,30 @@ export default function CandidateListPage({ kind }) {
                 exit={{ opacity: 0, scale: 0.9 }}
                 whileHover={{ y: -4 }}
                 onClick={() => setOpen(c)}
-                className="glass cursor-pointer rounded-3xl p-5 text-left transition-colors hover:border-white/20 focus-visible:outline-2 focus-visible:outline-brand-500"
+                className={cx(
+                  'glass min-w-0 cursor-pointer rounded-3xl p-4 text-left transition-colors sm:p-5 hover:border-white/20 focus-visible:outline-2 focus-visible:outline-brand-500',
+                  isPipeline && selected.has(c.id) && 'border-brand-500/60 ring-2 ring-brand-500/40',
+                )}
               >
                 <div className="flex items-start gap-3">
+                  {isPipeline && (
+                    <button
+                      type="button"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        toggle(c.id);
+                      }}
+                      role="checkbox"
+                      aria-checked={selected.has(c.id)}
+                      aria-label={`Select ${c.name}`}
+                      className={cx(
+                        'mt-3 grid h-6 w-6 shrink-0 place-items-center rounded-lg ring-1 transition',
+                        selected.has(c.id) ? 'bg-brand-500 text-white ring-brand-500' : 'bg-white/[0.04] ring-white/20 hover:ring-brand-500/60',
+                      )}
+                    >
+                      {selected.has(c.id) && <Check size={15} strokeWidth={3} />}
+                    </button>
+                  )}
                   <Avatar src={c.avatarUrl} name={c.name} size="md" />
                   <div className="min-w-0 flex-1">
                     <p className="truncate font-bold">{c.name}</p>
@@ -438,6 +507,7 @@ export default function CandidateListPage({ kind }) {
         onClose={() => setScheduling(null)}
         onScheduled={() => scheduling && update(rowKey(scheduling), { stage: 'interview' })}
       />
+      <GroupMessageModal recipients={groupTo} onClose={() => setGroupTo(null)} onSent={onGroupSent} />
       <SendTaskModal
         candidate={tasking}
         onClose={() => setTasking(null)}

@@ -38,6 +38,7 @@ const PRIVATE_TITLES = {
   '/settings': 'Account settings',
   '/admin': 'Admin',
   '/join': 'Join your team',
+  '/verify-email': 'Verify your email',
 };
 
 function setMeta(attr, key, content) {

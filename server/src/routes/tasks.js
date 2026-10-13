@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { auth, requireRole } from '../middleware/auth.js';
+import { auth, requireRole, requireVerified } from '../middleware/auth.js';
 import { Task } from '../models/Task.js';
 import { Swipe } from '../models/Swipe.js';
 import { Job } from '../models/Job.js';
@@ -15,7 +15,7 @@ import { signUrl } from '../utils/signedUrl.js';
 
 // Tasks (assignments) a company sends shortlisted candidates before the interview.
 const router = Router();
-router.use(auth);
+router.use(auth, requireVerified);
 
 const HOUR = 60 * 60 * 1000;
 const fmt = (d) => new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
