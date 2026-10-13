@@ -95,7 +95,9 @@ export default function App() {
   const { offline, refresh } = useAuth();
   // Title, description, canonical and robots for each page.
   useEffect(() => applyRouteMeta(location.pathname), [location.pathname]);
-  if (offline) return <OfflineScreen onRetry={refresh} />;
+  // Public pages (home, login) work without the API, so visitors and search engines still
+  // see them if it's down; only the signed-in app shows the "can't reach" screen.
+  if (offline && !['/', '/auth'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>

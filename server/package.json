@@ -9,6 +9,9 @@
     "start": "node src/index.js",
     "dev:db": "node scripts/dev-db.js"
   },
+  "engines": {
+    "node": ">=20"
+  },
   "dependencies": {
     "bcryptjs": "^3.0.3",
     "cors": "^2.8.6",
