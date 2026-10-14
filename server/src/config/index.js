@@ -36,8 +36,11 @@ export const config = {
 
 export const razorpayEnabled = Boolean(config.razorpay.keyId && config.razorpay.keySecret);
 
-// Simulated purchases for testing. Must be switched on explicitly and never in production.
-export const demoPayments = process.env.DEMO_PAYMENTS === 'true' && !razorpayEnabled && !isProd;
+// Simulated purchases for testing (one click gives the credits, no money). Must be switched
+// on explicitly. On the live site it also needs DEMO_PAYMENTS_ON_LIVE=true, for testing before
+// Razorpay is set up; anyone could get free credits, so remove both before launch.
+export const demoPayments =
+  process.env.DEMO_PAYMENTS === 'true' && !razorpayEnabled && (!isProd || process.env.DEMO_PAYMENTS_ON_LIVE === 'true');
 
 // Pricing is still being finalised with the client - edit plans here.
 export const PLANS = [
