@@ -6,6 +6,7 @@ import { UPLOADS_DIR } from './config/paths.js';
 import { errorHandler } from './middleware/error.js';
 import { apiLimiter, securityHeaders } from './middleware/security.js';
 import { verifySignedRequest, uploadHeaders } from './utils/signedUrl.js';
+import { serveFromCloud } from './utils/storage.js';
 import authRoutes from './routes/auth.js';
 import candidateRoutes from './routes/candidate.js';
 import companyRoutes from './routes/company.js';
@@ -32,7 +33,7 @@ app.use('/api', apiLimiter);
 // Webhook needs the raw body to check Razorpay's signature, so it goes before express.json().
 app.post('/api/payment/webhook', express.raw({ type: '*/*', limit: '1mb' }), razorpayWebhook);
 app.use(express.json({ limit: '1mb' }));
-app.use('/uploads', verifySignedRequest, express.static(UPLOADS_DIR, { maxAge: '3h', setHeaders: uploadHeaders }));
+app.use('/uploads', verifySignedRequest, express.static(UPLOADS_DIR, { maxAge: '3h', setHeaders: uploadHeaders }), serveFromCloud);
 
 app.get('/api/health', (_req, res) => res.json({ ok: true }));
 app.use('/api/auth', authRoutes);

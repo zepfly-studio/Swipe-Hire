@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
 import { auth, startSession } from '../middleware/auth.js';
-import { imageUpload, publicPath, removeUpload, assertFileSignature } from '../middleware/upload.js';
+import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
+import { storeUpload } from '../utils/storage.js';
 import { User } from '../models/User.js';
 import { HttpError } from '../utils/HttpError.js';
 import { text } from '../utils/fields.js';
@@ -33,7 +34,7 @@ router.post('/avatar', imageUpload, async (req, res) => {
   if (!req.file) throw new HttpError(400, 'Please choose a photo');
   await assertFileSignature(req.file, 'image');
   const prev = await User.findById(req.user.id).select('avatarUrl').lean();
-  const user = await User.findByIdAndUpdate(req.user.id, { avatarUrl: publicPath(req.file) }, { returnDocument: 'after' });
+  const user = await User.findByIdAndUpdate(req.user.id, { avatarUrl: await storeUpload(req.file) }, { returnDocument: 'after' });
   if (prev?.avatarUrl) removeUpload(prev.avatarUrl);
   res.json(await session(user));
 });

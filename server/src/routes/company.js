@@ -16,7 +16,8 @@ import { User } from '../models/User.js';
 import { HttpError } from '../utils/HttpError.js';
 import { withSignedFiles } from '../utils/signedUrl.js';
 import { num, text, requireFields, stripUndefined } from '../utils/fields.js';
-import { imageUpload, publicPath, removeUpload, assertFileSignature } from '../middleware/upload.js';
+import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
+import { storeUpload } from '../utils/storage.js';
 import { feedFilters, normalizeFilters, toCard } from '../utils/candidates.js';
 import { salaryFits, salaryFitWhere } from '../utils/match.js';
 import { feedRank } from '../utils/activity.js';
@@ -59,7 +60,7 @@ router.post('/logo', imageUpload, async (req, res) => {
   const prev = await getCompany(req);
   const profile = await CompanyProfile.findOneAndUpdate(
     { user: req.user.companyId },
-    { logoUrl: publicPath(req.file) },
+    { logoUrl: await storeUpload(req.file) },
     { returnDocument: 'after' },
   ).lean();
   if (prev.logoUrl) removeUpload(prev.logoUrl);

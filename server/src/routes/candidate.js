@@ -1,7 +1,8 @@
 import { Router } from 'express';
 import fs from 'node:fs';
 import { auth, requireRole, requireVerified } from '../middleware/auth.js';
-import { resumeUpload, videoUpload, publicPath, removeUpload, assertFileSignature } from '../middleware/upload.js';
+import { resumeUpload, videoUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
+import { storeUpload } from '../utils/storage.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
 import { Swipe } from '../models/Swipe.js';
@@ -79,7 +80,6 @@ router.put('/profile', async (req, res) => {
 router.post('/resume/autofill', resumeUpload, async (req, res) => {
   if (!req.file) throw new HttpError(400, 'Please choose your resume (PDF)');
   await assertFileSignature(req.file, 'pdf');
-  const url = publicPath(req.file);
   const prev = await CandidateProfile.findOne({ user: req.user.id }).lean();
 
   let fields = {};
@@ -88,6 +88,7 @@ router.post('/resume/autofill', resumeUpload, async (req, res) => {
   } catch {
     // Scanned / image-only PDFs have no text; the upload still counts.
   }
+  const url = await storeUpload(req.file);
   const profile = await CandidateProfile.findOneAndUpdate(
     { user: req.user.id },
     { $set: { resumeUrl: url }, ...(prev?.step >= 1 && { $max: { step: 2 } }) },
@@ -100,12 +101,12 @@ router.post('/resume/autofill', resumeUpload, async (req, res) => {
 async function saveUpload(req, field, requiredStep, nextStep) {
   if (!req.file) throw new HttpError(400, 'Please choose a file to upload');
   await assertFileSignature(req.file, field === 'resumeUrl' ? 'pdf' : 'video');
-  const url = publicPath(req.file);
   const prev = await CandidateProfile.findOne({ user: req.user.id }).lean();
   if (!prev || prev.step < requiredStep) {
-    removeUpload(url);
+    fs.promises.unlink(req.file.path).catch(() => {});
     throw new HttpError(400, 'Please complete the previous step first');
   }
+  const url = await storeUpload(req.file);
   const profile = await CandidateProfile.findOneAndUpdate(
     { user: req.user.id },
     { $set: { [field]: url }, $max: { step: nextStep } },

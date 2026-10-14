@@ -3,6 +3,7 @@ import path from 'node:path';
 import multer from 'multer';
 import { UPLOADS_DIR } from '../config/paths.js';
 import { HttpError } from '../utils/HttpError.js';
+import { removeFromCloud } from '../utils/storage.js';
 
 // Extensions come from this fixed map, never from the client's filename, so an
 // uploaded file can never be served as HTML/SVG/JS.
@@ -80,6 +81,7 @@ export const publicPath = (file) => `/uploads/${path.basename(path.dirname(file.
 
 export function removeUpload(url) {
   if (!url?.startsWith('/uploads/')) return;
+  removeFromCloud(url);
   const target = path.join(UPLOADS_DIR, url.split('?')[0].slice('/uploads/'.length));
   fs.promises.unlink(target).catch(() => {});
 }
