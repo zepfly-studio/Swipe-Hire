@@ -141,8 +141,12 @@ export default function LandingPage() {
     <div className="relative min-h-dvh overflow-x-clip">
       <Background />
 
-      <header className="sticky top-0 z-40 border-b border-white/5 bg-ink-950/70 backdrop-blur-xl">
-        <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 px-4" aria-label="Main">
+      {/* Floating header: a rounded bar that stays a little below the top edge. */}
+      <header className="sticky top-3 z-40 px-3 sm:top-4 sm:px-4">
+        <nav
+          className="mx-auto flex h-16 max-w-6xl items-center gap-3 rounded-[20px] border border-white/10 bg-ink-900/80 px-3 shadow-xl shadow-black/10 backdrop-blur-xl sm:px-4"
+          aria-label="Main"
+        >
           <Link to="/" aria-label="Swipe Hire home">
             <Logo />
           </Link>
@@ -164,7 +168,18 @@ export default function LandingPage() {
             <Link to="/auth?mode=login" className="btn-ghost px-4 py-2 text-sm">
               Log in
             </Link>
-            <Link to="/auth" className="btn-primary hidden px-4 py-2 text-sm sm:inline-flex">
+            {/* The logo tile slides to the other end on hover while the label slides back. */}
+            <Link
+              to="/auth"
+              className="btn-primary group relative hidden h-11 rounded-2xl py-0 pl-[3.25rem] pr-4 text-sm transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] hover:pl-4 hover:pr-[3.25rem] sm:inline-flex"
+            >
+              <span
+                className="absolute inset-y-1 left-1 grid aspect-square place-items-center rounded-[12px] bg-[#fff] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:left-[calc(100%-2.5rem)]"
+                aria-hidden="true"
+              >
+                <img src="/brand/mark-3d.webp" alt="" className="light-only size-7" />
+                <img src="/brand/logo-icon.webp" alt="" className="dark-only size-6" />
+              </span>
               Get started
             </Link>
           </div>

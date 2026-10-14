@@ -2,7 +2,7 @@ import { motion } from 'framer-motion';
 import { cx } from '../lib/api';
 
 // The official logo artwork (public/brand). `tagline` shows "Right swipe, right job." under it.
-// The *-dark files have light lettering for the dark theme; CSS shows the one that fits.
+// One file per theme (*-light: the blue logo, *-dark: light lettering); CSS shows the one that fits.
 export default function Logo({ animated = false, tagline = false }) {
   const base = tagline ? '/brand/logo-tagline' : '/brand/logo';
   return (
@@ -15,7 +15,7 @@ export default function Logo({ animated = false, tagline = false }) {
       {['light', 'dark'].map((t) => (
         <img
           key={t}
-          src={t === 'dark' ? `${base}-dark.webp` : `${base}.webp`}
+          src={`${base}-${t}.webp`}
           alt="SwipeHire"
           width={tagline ? 623 : 374}
           height={tagline ? 160 : 96}
