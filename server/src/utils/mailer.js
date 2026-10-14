@@ -3,12 +3,16 @@ import { config } from '../config/index.js';
 
 const { host, port, user, pass, from } = config.smtp;
 
-// Resend is used through its HTTPS API rather than SMTP: many hosts (e.g. Render's free
-// plan) block outgoing SMTP ports, which made sending hang. Set RESEND_API_KEY, or keep
-// the SMTP settings with SMTP_HOST=smtp.resend.com and the key as SMTP_PASS.
+// Email goes out through an HTTPS API when one is configured: many hosts (e.g. Render's
+// free plan) block outgoing SMTP ports, which made sending hang.
+// - Brevo (BREVO_API_KEY): can send to anyone from a single verified sender address,
+//   so it works before the site has its own domain.
+// - Resend (RESEND_API_KEY, or SMTP_HOST=smtp.resend.com with the key as SMTP_PASS):
+//   needs a verified domain to email anyone other than the account owner.
+const brevoKey = process.env.BREVO_API_KEY || '';
 const resendKey = process.env.RESEND_API_KEY || (host === 'smtp.resend.com' ? pass : '');
-const smtpEnabled = !resendKey && Boolean(host && user && pass);
-export const mailEnabled = Boolean(resendKey) || smtpEnabled;
+const smtpEnabled = !brevoKey && !resendKey && Boolean(host && user && pass);
+export const mailEnabled = Boolean(brevoKey || resendKey || smtpEnabled);
 
 const transport = smtpEnabled
   ? nodemailer.createTransport({
@@ -23,25 +27,38 @@ const transport = smtpEnabled
     })
   : null;
 
-async function sendWithResend({ to, subject, text }) {
-  const res = await fetch('https://api.resend.com/emails', {
+// "Swipe Hire <no-reply@x.com>" -> { name, email }
+function parseFrom(value) {
+  const m = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(value);
+  return m ? { name: m[1] || undefined, email: m[2] } : { email: value.trim() };
+}
+
+async function post(url, headers, body, label) {
+  const res = await fetch(url, {
     method: 'POST',
-    headers: { Authorization: `Bearer ${resendKey}`, 'Content-Type': 'application/json' },
-    body: JSON.stringify({ from, to: [to], subject, text }),
+    headers: { 'Content-Type': 'application/json', Accept: 'application/json', ...headers },
+    body: JSON.stringify(body),
     signal: AbortSignal.timeout(15_000),
   });
   if (!res.ok) {
     const detail = await res.text().catch(() => '');
-    throw new Error(`Resend ${res.status}: ${detail.slice(0, 300)}`);
+    throw new Error(`${label} ${res.status}: ${detail.slice(0, 300)}`);
   }
 }
 
+const sendWithBrevo = ({ to, subject, text }) =>
+  post('https://api.brevo.com/v3/smtp/email', { 'api-key': brevoKey }, { sender: parseFrom(from), to: [{ email: to }], subject, textContent: text }, 'Brevo');
+
+const sendWithResend = ({ to, subject, text }) =>
+  post('https://api.resend.com/emails', { Authorization: `Bearer ${resendKey}` }, { from, to: [to], subject, text }, 'Resend');
+
 // Without email settings (local development) emails are printed to the console.
-export async function sendMail({ to, subject, text }) {
-  if (resendKey) return sendWithResend({ to, subject, text });
+export async function sendMail(mail) {
+  if (brevoKey) return sendWithBrevo(mail);
+  if (resendKey) return sendWithResend(mail);
   if (!transport) {
-    console.log(`[mail] to=${to} | ${subject}\n${text}\n`);
+    console.log(`[mail] to=${mail.to} | ${mail.subject}\n${mail.text}\n`);
     return;
   }
-  await transport.sendMail({ from, to, subject, text });
+  await transport.sendMail({ from, to: mail.to, subject: mail.subject, text: mail.text });
 }
