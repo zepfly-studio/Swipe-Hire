@@ -5,12 +5,28 @@ import { v2 as cloudinary } from 'cloudinary';
 import { publicPath } from '../middleware/upload.js';
 import { uploadHeaders } from './signedUrl.js';
 
-// Where uploaded files live. With CLOUDINARY_URL set (cloudinary://KEY:SECRET@CLOUD_NAME,
-// read by the SDK itself) they go to Cloudinary as private ("authenticated") files, so they
-// survive restarts on hosts with temporary disks (e.g. Render). Without it they stay on disk.
+// Where uploaded files live. Cloudinary credentials can come from CLOUDINARY_URL or the
+// individual CLOUDINARY_CLOUD_NAME, CLOUDINARY_API_KEY/CLOUDINARY_API, and CLOUDINARY_API_SECRET
+// variables. Files go to Cloudinary as private ("authenticated") files, so they survive restarts
+// on hosts with temporary disks (e.g. Render). Without credentials they stay on disk.
 // Either way the app links to them the same way: /uploads/<folder>/<file> with a signed,
 // expiring query string, and this server fetches the file, so they stay private.
-export const cloudEnabled = Boolean(process.env.CLOUDINARY_URL);
+const cloudUrl = process.env.CLOUDINARY_URL?.trim();
+const cloudName = process.env.CLOUDINARY_CLOUD_NAME?.trim();
+const apiKey = process.env.CLOUDINARY_API_KEY?.trim() || process.env.CLOUDINARY_API?.trim();
+const apiSecret = process.env.CLOUDINARY_API_SECRET?.trim();
+const hasSeparateCredentials = Boolean(cloudName && apiKey && apiSecret);
+
+if (hasSeparateCredentials) {
+  // Support both Cloudinary's standard names and the names used in this project's server env.
+  cloudinary.config({ cloud_name: cloudName, api_key: apiKey, api_secret: apiSecret });
+} else if (cloudUrl?.startsWith('cloudinary://')) {
+  cloudinary.config({ url: cloudUrl });
+} else if (cloudUrl) {
+  throw new Error('Invalid CLOUDINARY_URL: it must begin with cloudinary://');
+}
+
+export const cloudEnabled = hasSeparateCredentials || Boolean(cloudUrl);
 const FOLDER = process.env.CLOUDINARY_FOLDER || 'swipehire';
 const VIDEO_EXTS = ['webm', 'mp4', 'mov'];
 
