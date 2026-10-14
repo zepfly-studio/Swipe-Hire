@@ -105,7 +105,44 @@ export const DEGREES = [
   'CA', 'CS', 'CMA', 'PhD', '12th (Science)', '12th (Commerce)', '12th (Arts)', '10th',
 ];
 
-export const CITIES = [
-  'Jaipur', 'Delhi', 'Noida', 'Gurugram', 'Mumbai', 'Pune', 'Bengaluru', 'Hyderabad', 'Chennai', 'Kolkata',
-  'Ahmedabad', 'Indore', 'Chandigarh', 'Lucknow', 'Kochi', 'Remote',
+// Indian cities: the biggest job markets first (they win ties in suggestions), then the rest
+// alphabetically. Also used to spot a city in resumes, so names that are also common
+// surnames or street names (Sagar, Tonk…) are left out.
+const MAJOR_CITIES = [
+  'Jaipur', 'Delhi', 'New Delhi', 'Mumbai', 'Bengaluru', 'Hyderabad', 'Pune', 'Chennai', 'Kolkata', 'Ahmedabad',
+  'Noida', 'Gurugram', 'Chandigarh', 'Indore', 'Lucknow', 'Kochi', 'Surat', 'Nagpur', 'Bhopal', 'Coimbatore',
+  'Visakhapatnam', 'Vadodara', 'Jodhpur', 'Udaipur', 'Kota', 'Ghaziabad', 'Faridabad', 'Navi Mumbai', 'Thane', 'Mysuru',
 ];
+const OTHER_CITIES = [
+  'Agartala', 'Agra', 'Ahmednagar', 'Aizawl', 'Ajmer', 'Akola', 'Aligarh', 'Allahabad', 'Alwar', 'Ambala', 'Amravati',
+  'Amritsar', 'Anand', 'Anantapur', 'Asansol', 'Aurangabad', 'Bareilly', 'Barmer', 'Belagavi', 'Bellary', 'Bharatpur',
+  'Bhavnagar', 'Bhilai', 'Bhilwara', 'Bhiwadi', 'Bhubaneswar', 'Bikaner', 'Bilaspur', 'Bokaro', 'Chittorgarh',
+  'Churu', 'Cuttack', 'Darjeeling', 'Davanagere', 'Dehradun', 'Dewas', 'Dhanbad', 'Dharamshala', 'Dhule', 'Dibrugarh',
+  'Dindigul', 'Durgapur', 'Erode', 'Gandhinagar', 'Gangtok', 'Gaya', 'Gorakhpur', 'Greater Noida', 'Gulbarga', 'Guntur',
+  'Guwahati', 'Gwalior', 'Haldwani', 'Haridwar', 'Hisar', 'Hosur', 'Howrah', 'Hubballi', 'Imphal', 'Itanagar', 'Jabalpur',
+  'Jaisalmer', 'Jalandhar', 'Jalgaon', 'Jammu', 'Jamnagar', 'Jamshedpur', 'Jhansi', 'Jhunjhunu', 'Junagadh', 'Kakinada',
+  'Kalyan', 'Kannur', 'Kanpur', 'Karnal', 'Kharagpur', 'Kishangarh', 'Kohima', 'Kolhapur', 'Kollam', 'Kozhikode',
+  'Kurnool', 'Latur', 'Ludhiana', 'Madurai', 'Mangaluru', 'Manipal', 'Mathura', 'Meerut', 'Mohali', 'Moradabad',
+  'Muzaffarpur', 'Nanded', 'Nashik', 'Nellore', 'Nizamabad', 'Ooty', 'Panaji', 'Panipat', 'Patiala', 'Patna',
+  'Pondicherry', 'Port Blair', 'Prayagraj', 'Raipur', 'Rajahmundry', 'Rajkot', 'Ranchi', 'Ratlam', 'Rishikesh',
+  'Rohtak', 'Rourkela', 'Saharanpur', 'Salem', 'Sambalpur', 'Sangli', 'Satara', 'Secunderabad', 'Shillong', 'Shimla',
+  'Sikar', 'Silchar', 'Siliguri', 'Solapur', 'Sonipat', 'Sri Ganganagar', 'Srinagar', 'Thiruvananthapuram', 'Thrissur',
+  'Tiruchirappalli', 'Tirunelveli', 'Tirupati', 'Tiruppur', 'Udupi', 'Ujjain', 'Vapi', 'Varanasi', 'Vellore', 'Vijayawada',
+  'Warangal', 'Zirakpur',
+  // Older or everyday names people still type.
+  'Bangalore', 'Gurgaon', 'Bombay', 'Calcutta', 'Madras', 'Mysore', 'Mangalore', 'Trivandrum', 'Cochin', 'Baroda', 'Vizag',
+];
+export const CITIES = [...MAJOR_CITIES, ...OTHER_CITIES, 'Remote'];
+
+export const STATES = [
+  'Andhra Pradesh', 'Arunachal Pradesh', 'Assam', 'Bihar', 'Chhattisgarh', 'Goa', 'Gujarat', 'Haryana', 'Himachal Pradesh',
+  'Jharkhand', 'Karnataka', 'Kerala', 'Madhya Pradesh', 'Maharashtra', 'Manipur', 'Meghalaya', 'Mizoram', 'Nagaland',
+  'Odisha', 'Punjab', 'Rajasthan', 'Sikkim', 'Tamil Nadu', 'Telangana', 'Tripura', 'Uttar Pradesh', 'Uttarakhand',
+  'West Bengal',
+  // Union territories
+  'Andaman and Nicobar Islands', 'Chandigarh UT', 'Dadra and Nagar Haveli and Daman and Diu', 'Delhi NCR',
+  'Jammu and Kashmir', 'Ladakh', 'Lakshadweep', 'Puducherry',
+];
+
+// Everything a location box suggests: cities first, then states, then "Remote".
+export const LOCATIONS = [...MAJOR_CITIES, ...OTHER_CITIES, ...STATES, 'Remote'];

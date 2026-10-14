@@ -13,23 +13,27 @@
   --color-brand-500: #ff4d6d;
   --color-brand-600: #e8385a;
   --color-violet-brand: #7c5cff;
+  /* Errors and destructive actions, so they never take the brand colour. */
+  --color-danger: #fb7185;
 }
 
-/* The site's theme (data-theme="light" is set on <html> in index.html). The components
-   were written dark-first, so here surfaces go light and "white" (used for text, borders
-   and tints everywhere) becomes near-black, flipping the whole UI without touching markup. */
+/* Themes: data-theme on <html> (see src/lib/theme.js). The values above are the dark
+   theme. The components were written dark-first, so the light theme makes surfaces light
+   and "white" (used for text, borders and tints everywhere) near-black, flipping the whole
+   UI without touching markup. Its accent is sky blue to blue instead of pink to violet. */
 :root[data-theme='light'] {
   color-scheme: light;
-  --color-ink-950: #f5f5fa;
+  --color-ink-950: #f3f7fc;
   --color-ink-900: #ffffff;
-  --color-ink-800: #f0f0f6;
-  --color-ink-700: #e6e6ef;
-  --color-ink-600: #d6d6e3;
-  --color-white: #15151f;
-  --color-brand-400: #e23a62;
-  --color-brand-500: #ec3d64;
-  --color-brand-600: #d42a52;
-  --color-violet-brand: #6d4aff;
+  --color-ink-800: #edf3fa;
+  --color-ink-700: #e1eaf5;
+  --color-ink-600: #cfdcec;
+  --color-white: #0f1b2d;
+  --color-brand-400: #0369a1;
+  --color-brand-500: #0284c7;
+  --color-brand-600: #0369a1;
+  --color-violet-brand: #2563eb;
+  --color-danger: #dc2626;
   /* Status colours made darker so they stay readable on white. */
   --color-emerald-200: #047857;
   --color-emerald-300: #047857;
@@ -48,6 +52,11 @@
 }
 :root[data-theme='light'] [class*='color-scheme:dark'] {
   color-scheme: light;
+}
+/* Artwork that has a separate version per theme (e.g. the logo). */
+:root[data-theme='light'] .dark-only,
+:root:not([data-theme='light']) .light-only {
+  display: none;
 }
 
 @layer base {

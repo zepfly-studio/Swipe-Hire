@@ -16,7 +16,7 @@ export default function Background() {
         transition={blob(26)}
       />
       <motion.div
-        className="absolute -bottom-48 left-1/4 h-[440px] w-[440px] rounded-full bg-fuchsia-500/10 blur-[130px]"
+        className="absolute -bottom-48 left-1/4 h-[440px] w-[440px] rounded-full bg-brand-400/10 blur-[130px]"
         animate={{ x: [0, 140, -60], y: [0, -60, 0] }}
         transition={blob(30)}
       />

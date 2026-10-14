@@ -148,7 +148,7 @@ function Recorder({ onClip, onBusyChange }) {
         <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
           <Illustration name="record-video" size="w-44 sm:w-48" />
           {error ? (
-            <p className="text-sm text-brand-400">{error}</p>
+            <p className="text-sm text-danger">{error}</p>
           ) : (
             <p className="text-sm text-white/50">Say your name, your role and why a company should hire you.</p>
           )}
@@ -293,7 +293,7 @@ function FilePicker({ onClip }) {
       <p className="text-sm text-white/40">
         {MIN_SEC}–{MAX_SEC} seconds · MP4 / WebM / MOV · max 40 MB
       </p>
-      {error && <p className="text-sm font-medium text-brand-400">{error}</p>}
+      {error && <p className="text-sm font-medium text-danger">{error}</p>}
     </label>
   );
 }
@@ -374,7 +374,7 @@ export default function VideoStep({ existing, onBack, onDone }) {
             <p className="text-right text-xs text-white/50">Uploading… {progress}%</p>
           </div>
         )}
-        {error && <p className="text-sm font-medium text-brand-400">{error}</p>}
+        {error && <p className="text-sm font-medium text-danger">{error}</p>}
       </StepBody>
       <StepFooter>
         <Button className="btn-ghost" onClick={onBack} disabled={progress !== null || recording}>

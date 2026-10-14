@@ -15,7 +15,7 @@ import Illustration from '../../components/Illustration';
 import ActivityMeter from '../../components/ActivityMeter';
 import { useAuth } from '../../context/AuthContext';
 import { api, cx, errorMessage } from '../../lib/api';
-import { CITIES, JOB_TYPE_OPTIONS, WORK_MODE_OPTIONS } from '../../lib/options';
+import { LOCATIONS, JOB_TYPE_OPTIONS, WORK_MODE_OPTIONS } from '../../lib/options';
 
 function Stat({ icon: Icon, label, value, delay, tone }) {
   return (
@@ -98,7 +98,7 @@ function Preferences({ profile, onSave }) {
         <TagInput
           value={form.preferredLocations}
           onChange={(v) => setForm((f) => ({ ...f, preferredLocations: v }))}
-          options={CITIES}
+          options={LOCATIONS}
           placeholder="Jaipur, Pune…"
         />
       </div>

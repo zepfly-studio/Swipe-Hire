@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { Bell, BellOff, Bookmark, RotateCcw, Trash2, X } from 'lucide-react';
 import Modal from './Modal';
+import LocationInput from './LocationInput';
 import TagInput from './TagInput';
 import { Button, Field, Input, MultiChipSelect } from './ui';
 import { cx, salaryHint, toLpa } from '../lib/api';
@@ -95,7 +96,7 @@ function Form({ value, onApply, onClose, searches, onSaveSearch, onToggleAlerts,
           onDelete={onDeleteSearch}
         />
         <Field label="City">
-          <Input value={f.location} onChange={set('location')} placeholder="e.g. Jaipur (also matches preferred cities)" />
+          <LocationInput value={f.location} onChange={set('location')} placeholder="e.g. Jaipur (also matches preferred cities)" />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Min experience (yrs)">

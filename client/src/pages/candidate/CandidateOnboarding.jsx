@@ -12,6 +12,7 @@ import Autocomplete from '../../components/Autocomplete';
 import { DEGREES, ROLES } from '../../lib/suggestions';
 import ResumeStep from './ResumeStep';
 import ResumeAutofill from './ResumeAutofill';
+import LocationInput from '../../components/LocationInput';
 import VideoStep from './VideoStep';
 
 const STEPS = [
@@ -159,7 +160,7 @@ export default function CandidateOnboarding() {
                 <ChipSelect layoutId="gender" options={GENDERS} value={form.gender} onChange={set('gender')} />
               </Field>
               <Field label="Current city" error={errors.location}>
-                <Input icon={MapPin} value={form.location} onChange={set('location')} placeholder="Jaipur, Rajasthan" />
+                <LocationInput value={form.location} onChange={set('location')} placeholder="Jaipur" />
               </Field>
               <div className="grid grid-cols-2 gap-4">
                 <Field label="Highest qualification" error={errors.qualification} className="col-span-2 sm:col-span-1">

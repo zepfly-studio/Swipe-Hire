@@ -6,6 +6,7 @@ import CompanyShell from '../../components/CompanyShell';
 import ImageUploader from '../../components/ImageUploader';
 import { Button, Field, Input, Select, Textarea, VerifiedBadge } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
+import LocationInput from '../../components/LocationInput';
 import { api, errorMessage } from '../../lib/api';
 
 const SIZES = ['1–10', '11–50', '51–200', '201–1000', '1000+'];
@@ -23,7 +24,8 @@ export default function CompanyProfilePage() {
   const dirty = JSON.stringify(form) !== JSON.stringify(initial(profile));
 
   const set = (k) => (e) => {
-    setForm((f) => ({ ...f, [k]: e.target.value }));
+    // Inputs pass an event; suggestion boxes (location) pass the chosen text.
+    setForm((f) => ({ ...f, [k]: e?.target ? e.target.value : e }));
     if (errors[k]) setErrors((er) => ({ ...er, [k]: undefined }));
   };
 
@@ -110,7 +112,7 @@ export default function CompanyProfilePage() {
           </div>
           <div className="grid gap-4 sm:grid-cols-2">
             <Field label="City" error={errors.location}>
-              <Input icon={MapPin} value={form.location} onChange={set('location')} placeholder="Jaipur" />
+              <LocationInput value={form.location} onChange={set('location')} placeholder="Jaipur" />
             </Field>
             <Field label="Office address" hint="Used for in-person interviews">
               <Input icon={MapPin} value={form.address} onChange={set('address')} placeholder="Floor, building, area" />

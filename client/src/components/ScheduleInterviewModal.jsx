@@ -143,7 +143,7 @@ function Form({ candidate, onClose, onScheduled }) {
         <Field label="Note for the candidate" hint="Optional">
           <Textarea value={note} onChange={(e) => setNote(e.target.value)} maxLength={500} placeholder="Please bring your portfolio" />
         </Field>
-        {error && <p className="text-sm font-medium text-brand-400">{error}</p>}
+        {error && <p className="text-sm font-medium text-danger">{error}</p>}
       </div>
       <div className="border-t border-white/10 p-4">
         <Button className="btn-primary w-full" onClick={submit} loading={saving}>

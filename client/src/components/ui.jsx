@@ -39,7 +39,7 @@ export function Field({ label, error, hint, children, className, as: Tag = 'labe
             initial={{ opacity: 0, height: 0 }}
             animate={{ opacity: 1, height: 'auto' }}
             exit={{ opacity: 0, height: 0 }}
-            className="block overflow-hidden pt-1 text-xs font-medium text-brand-400"
+            className="block overflow-hidden pt-1 text-xs font-medium text-danger"
           >
             {error}
           </motion.span>
@@ -168,7 +168,7 @@ export function StagePill({ stage, candidateView = false }) {
   return <span className={cx('rounded-full px-2.5 py-1 text-xs font-bold', s.cls)}>{label}</span>;
 }
 
-const BURST_COLORS =['#ff4d6d', '#7c5cff', '#34d399', '#fbbf24', '#38bdf8'];
+const BURST_COLORS = ['var(--color-brand-500)', 'var(--color-violet-brand)', '#34d399', '#fbbf24', '#38bdf8'];
 
 // Confetti-style particle burst, centred on its parent.
 export function Burst({ count = 22, distance = 140 }) {

@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
+import ThemeToggle from '../components/ThemeToggle';
 import { api, cx } from '../lib/api';
 import { addJsonLd } from '../lib/seo';
 
@@ -158,6 +159,7 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="ml-auto flex items-center gap-2">
+            <ThemeToggle />
             <Link to="/auth?mode=login" className="btn-ghost px-4 py-2 text-sm">
               Log in
             </Link>
@@ -339,7 +341,7 @@ export default function LandingPage() {
                 <Link to="/auth?role=company" className="btn-primary">
                   Start hiring
                 </Link>
-                <Link to="/auth" className="btn-ghost bg-[#fff]/80">
+                <Link to="/auth" className="btn-ghost bg-ink-900/80">
                   Find a job
                 </Link>
               </div>

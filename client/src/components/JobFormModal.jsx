@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { MapPin, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Modal from './Modal';
+import LocationInput from './LocationInput';
 import Autocomplete from './Autocomplete';
 import TagInput from './TagInput';
 import { Button, ChipSelect, Field, Input, Textarea } from './ui';
@@ -82,7 +83,7 @@ function Form({ job, defaults, onClose, onSaved }) {
             <Input type="number" min={0} inputMode="decimal" value={form.salaryMax} onChange={set('salaryMax')} placeholder="8" />
           </Field>
           <Field label="Job location">
-            <Input icon={MapPin} value={form.jobLocation} onChange={set('jobLocation')} placeholder="Jaipur" />
+            <LocationInput value={form.jobLocation} onChange={set('jobLocation')} placeholder="Jaipur" />
           </Field>
           <Field label="Openings" error={errors.openings}>
             <Input type="number" min={1} inputMode="numeric" value={form.openings} onChange={set('openings')} />

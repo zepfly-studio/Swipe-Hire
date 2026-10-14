@@ -8,6 +8,7 @@ import {
 import Background from './Background';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell';
+import ThemeToggle from './ThemeToggle';
 import Avatar from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { usePoll } from '../hooks/usePoll';
@@ -194,6 +195,7 @@ export default function AppShell({ children }) {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             {isCompany && <SwipeCounter />}
+            <ThemeToggle />
             <NotificationBell />
             <ProfileMenu />
           </div>

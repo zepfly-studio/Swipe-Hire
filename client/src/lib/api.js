@@ -8,10 +8,10 @@ export const api = axios.create({
   headers: { 'X-Requested-With': 'XMLHttpRequest' },
 });
 
-// Older versions kept the login, form drafts and a theme choice in localStorage; remove them.
+// Older versions kept the login and form drafts in localStorage; remove them.
 try {
   Object.keys(localStorage)
-    .filter((k) => k === 'swipehire_token' || k === 'swipehire_theme' || k.startsWith('swipehire_draft_'))
+    .filter((k) => k === 'swipehire_token' || k.startsWith('swipehire_draft_'))
     .forEach((k) => localStorage.removeItem(k));
 } catch {
   // storage unavailable

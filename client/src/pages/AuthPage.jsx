@@ -5,6 +5,7 @@ import { Briefcase, Building2, Eye, EyeOff, Lock, Mail, User } from 'lucide-reac
 import toast from 'react-hot-toast';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
+import ThemeToggle from '../components/ThemeToggle';
 import { Button, Field, Input } from '../components/ui';
 import { homePath, useAuth } from '../context/AuthContext';
 import { api, cx, errorMessage } from '../lib/api';
@@ -58,6 +59,9 @@ export default function AuthPage() {
 
   return (
     <div className="relative min-h-dvh">
+      <div className="absolute right-4 top-4 z-30">
+        <ThemeToggle />
+      </div>
       <Background />
       <div className="mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-4 py-8 lg:grid-cols-2">
         <motion.section

@@ -11,4 +11,4 @@ export const JOB_TYPE_OPTIONS = [
   { value: 'contract', label: 'Contract' },
 ];
 
-export { CITIES } from '../../../shared/taxonomy.js';
+export { CITIES, STATES, LOCATIONS } from '../../../shared/taxonomy.js';

@@ -105,7 +105,7 @@ export default function ResumeStep({ existing, onBack, onDone }) {
             <p className="text-right text-xs text-white/50">Uploading… {progress}%</p>
           </div>
         )}
-        {error && <p className="text-sm font-medium text-brand-400">{error}</p>}
+        {error && <p className="text-sm font-medium text-danger">{error}</p>}
       </StepBody>
       <StepFooter>
         <Button type="button" className="btn-ghost" onClick={onBack} disabled={progress !== null}>

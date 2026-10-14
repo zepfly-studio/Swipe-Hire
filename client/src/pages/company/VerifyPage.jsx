@@ -142,7 +142,7 @@ export default function VerifyPage() {
                   <Button className="btn-primary" onClick={sendCode} loading={busy === 'send'}>
                     Send code to my email
                   </Button>
-                  {errors.email && <p className="mt-3 text-sm font-medium text-brand-400">{errors.email}</p>}
+                  {errors.email && <p className="mt-3 text-sm font-medium text-danger">{errors.email}</p>}
                 </div>
               ) : (
                 <div className="mt-5 space-y-3">

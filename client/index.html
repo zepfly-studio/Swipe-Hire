@@ -3,7 +3,7 @@
   <head>
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
-    <meta name="theme-color" content="#f5f5fa" />
+    <meta name="theme-color" content="#f3f7fc" />
 
     <!-- Search. Per-page title/description/canonical are updated in src/lib/seo.js. -->
     <title>Swipe Hire – Best Hiring Platform &amp; Job App in India</title>
@@ -75,6 +75,15 @@
       }
     </script>
 
+    <script>
+      // Saved light/dark choice, applied before the first paint (see src/lib/theme.js).
+      try {
+        if (localStorage.getItem('swipehire_theme') === 'dark') {
+          document.documentElement.dataset.theme = 'dark';
+          document.querySelector('meta[name="theme-color"]').content = '#07070d';
+        }
+      } catch (e) {}
+    </script>
     <link rel="preconnect" href="https://fonts.googleapis.com" />
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
     <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700;800&display=swap" rel="stylesheet" />

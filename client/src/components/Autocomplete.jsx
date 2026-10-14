@@ -5,7 +5,8 @@ import SuggestionList, { handleListKeys } from './SuggestionList';
 import { searchOptions } from '../lib/suggestions';
 
 // Text input that suggests matching options while typing; free text is still allowed.
-export default function Autocomplete({ value, onChange, options, icon, placeholder }) {
+// `search` (optional) replaces the default matching, e.g. for locations.
+export default function Autocomplete({ value, onChange, options, icon, placeholder, search }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
 
@@ -14,8 +15,8 @@ export default function Autocomplete({ value, onChange, options, icon, placehold
     // Once the value is a complete option, close the list so it doesn't cover the next field.
     const typed = String(value || '').trim().toLowerCase();
     if (options.some((o) => o.toLowerCase() === typed)) return [];
-    return searchOptions(options, typed);
-  }, [open, options, value]);
+    return search ? search(typed) : searchOptions(options, typed);
+  }, [open, options, value, search]);
 
   const pick = (item) => {
     onChange(item);

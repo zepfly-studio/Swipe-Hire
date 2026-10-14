@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Navigate, useNavigate, useSearchParams } from 'react-router-dom';
 import { ArrowLeft, ArrowRight, Building2, Globe, MapPin } from 'lucide-react';
 import { useAuth } from '../../context/AuthContext';
+import LocationInput from '../../components/LocationInput';
 import { api, errorMessage, salaryHint, toLpa } from '../../lib/api';
 import { draftKey, readDraft, useDraft } from '../../hooks/useDraft';
 import { DoneScreen, OnboardingShell, StepBody, StepFooter, StepModal } from '../../components/Onboarding';
@@ -141,7 +142,7 @@ export default function CompanyOnboarding() {
                   <Select options={SIZES} value={form.companySize} onChange={set('companySize')} placeholder="Employees" />
                 </Field>
                 <Field label="Location" error={errors.location} className="col-span-2 sm:col-span-1">
-                  <Input icon={MapPin} value={form.location} onChange={set('location')} placeholder="Jaipur" />
+                  <LocationInput value={form.location} onChange={set('location')} placeholder="Jaipur" />
                 </Field>
                 <Field label="Website" className="col-span-2 sm:col-span-1">
                   <Input icon={Globe} value={form.website} onChange={set('website')} placeholder="Optional" />
@@ -185,7 +186,7 @@ export default function CompanyOnboarding() {
                 </Field>
               </div>
               <Field label="Job location">
-                <Input icon={MapPin} value={form.jobLocation} onChange={set('jobLocation')} placeholder="Jaipur" />
+                <LocationInput value={form.jobLocation} onChange={set('jobLocation')} placeholder="Jaipur" />
               </Field>
               <Field label="Work mode" as="div">
                 <ChipSelect layoutId="work-mode" options={WORK_MODES} value={form.workMode} onChange={set('workMode')} />

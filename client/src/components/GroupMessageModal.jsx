@@ -72,7 +72,7 @@ function Form({ recipients, onClose, onSent }) {
           />
         </label>
         <p className="text-xs text-white/45">Candidates will see your company name with this message, and can reply in Messages.</p>
-        {error && <p className="text-sm font-medium text-brand-400">{error}</p>}
+        {error && <p className="text-sm font-medium text-danger">{error}</p>}
       </div>
       <div className="border-t border-white/10 p-4">
         <Button className="btn-primary w-full" onClick={send} loading={sending}>

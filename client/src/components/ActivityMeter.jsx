@@ -37,8 +37,8 @@ export default function ActivityMeter({ profile, onProfile }) {
   return (
     <section
       className={cx(
-        'flex flex-col items-center gap-5 rounded-3xl p-5 ring-1 sm:flex-row sm:p-6',
-        full ? 'bg-amber-300/10 ring-amber-300/30' : 'glass',
+        'flex flex-col items-center gap-5 rounded-3xl p-5 sm:flex-row sm:p-6',
+        full ? 'bg-amber-300/10 ring-1 ring-amber-300/30' : 'glass',
       )}
       aria-label="Profile activity"
     >

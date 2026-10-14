@@ -85,7 +85,7 @@ export default function VerifyEmailPage() {
                 We sent a 6-digit code to <b className="text-white">{sent.sentTo}</b>. It expires in 15 minutes.
               </>
             ) : sendError ? (
-              <span className="font-medium text-brand-400">{sendError}</span>
+              <span className="font-medium text-danger">{sendError}</span>
             ) : (
               'Sending you a code…'
             )}
@@ -115,7 +115,7 @@ export default function VerifyEmailPage() {
               aria-label="6-digit code"
               className="input text-center text-2xl font-bold tracking-[0.5em]"
             />
-            {error && <p className="text-sm font-medium text-brand-400">{error}</p>}
+            {error && <p className="text-sm font-medium text-danger">{error}</p>}
             <Button type="submit" className="btn-primary w-full" loading={verifying}>
               Verify email
             </Button>
