@@ -34,10 +34,11 @@ const VIDEO_EXTS = ['webm', 'mp4', 'mov'];
 function cloudRef(url) {
   const rel = url.split('?')[0].slice('/uploads/'.length);
   const ext = path.extname(rel).slice(1).toLowerCase();
-  const resourceType = ext === 'pdf' ? 'raw' : VIDEO_EXTS.includes(ext) ? 'video' : 'image';
+  // Cloudinary treats ordinary PDFs as image assets. Keep the extension as the
+  // delivery format while using the extension-free public ID used by image assets.
+  const resourceType = VIDEO_EXTS.includes(ext) ? 'video' : 'image';
   const id = `${FOLDER}/${rel}`;
-  // "raw" files keep their extension in the id; images and videos don't.
-  return resourceType === 'raw' ? { resourceType, publicId: id } : { resourceType, publicId: id.slice(0, -(ext.length + 1)), format: ext };
+  return { resourceType, publicId: id.slice(0, -(ext.length + 1)), format: ext };
 }
 
 // Saves a file multer just wrote to disk and returns the link stored in the database.
