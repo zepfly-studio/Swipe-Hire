@@ -19,6 +19,7 @@ export default function VerifyEmailPage() {
   const [retryIn, setRetryIn] = useState(0);
   const [verifying, setVerifying] = useState(false);
   const [sending, setSending] = useState(false);
+  const [sendError, setSendError] = useState('');
   const input = useRef(null);
 
   const send = async () => {
@@ -27,9 +28,10 @@ export default function VerifyEmailPage() {
       const { data } = await api.post('/auth/email/send');
       if (data.verified) return navigate('/', { replace: true });
       setSent(data);
+      setSendError('');
       setRetryIn(data.retryIn ?? 60);
     } catch (err) {
-      toast.error(errorMessage(err));
+      setSendError(errorMessage(err));
     } finally {
       setSending(false);
     }
@@ -82,6 +84,8 @@ export default function VerifyEmailPage() {
               <>
                 We sent a 6-digit code to <b className="text-white">{sent.sentTo}</b>. It expires in 15 minutes.
               </>
+            ) : sendError ? (
+              <span className="font-medium text-brand-400">{sendError}</span>
             ) : (
               'Sending you a code…'
             )}

@@ -160,11 +160,18 @@ router.post('/email/send', auth, async (req, res) => {
     dev: showCodeOnScreen() ? code : undefined,
   };
   await user.save();
-  await sendMail({
-    to: user.email,
-    subject: `${code} is your Swipe Hire code`,
-    text: `Hi ${user.name.split(' ')[0]},\n\nYour Swipe Hire verification code is ${code}. It expires in 15 minutes.\n\nIf you didn't create a Swipe Hire account, you can ignore this email.\n\n— Team Swipe Hire`,
-  });
+  try {
+    await sendMail({
+      to: user.email,
+      subject: `${code} is your Swipe Hire code`,
+      text: `Hi ${user.name.split(' ')[0]},\n\nYour Swipe Hire verification code is ${code}. It expires in 15 minutes.\n\nIf you didn't create a Swipe Hire account, you can ignore this email.\n\n— Team Swipe Hire`,
+    });
+  } catch (err) {
+    console.error('[mail] verification code not sent:', err.message);
+    // Let the next tap send again right away instead of reusing a code that never arrived.
+    await User.updateOne({ _id: user._id }, { $unset: { 'emailOtp.sentAt': 1 } });
+    throw new HttpError(502, "We couldn't send the email right now. Please try again in a minute.");
+  }
   res.json({ sentTo: user.email, retryIn: OTP_COOLDOWN / 1000, devCode: showCodeOnScreen() ? code : undefined });
 });
 
