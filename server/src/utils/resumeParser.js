@@ -146,18 +146,47 @@ const SECTIONS = {
     /^(?:work\s+|professional\s+|employment\s+|relevant\s+|industry\s+|job\s+)?(?:experience|employment(?:\s+history)?|work\s+history|career\s+history|internships?)\s*:?$/i,
   education: /^(?:education(?:al)?(?:\s+(?:details|qualifications?|background))?|academics?(?:\s+(?:details|qualifications?|background))?|academic\s+(?:details|qualifications?|background)|qualifications?)\s*:?$/i,
   other:
-    /^(?:skills?|technical\s+skills|key\s+skills|core\s+skills|projects?|academic\s+projects|personal\s+projects|certifications?|courses|trainings?|achievements?|awards|summary|profile(?:\s+summary)?|professional\s+summary|objective|career\s+objective|about\s+me|hobbies|interests|languages?(?:\s+known)?|personal\s+(?:details|information|profile)|declaration|references?|strengths|extra[-\s]?curricular.*|positions?\s+of\s+responsibility|contact(?:\s+details)?)\s*:?$/i,
+    /^(?:skills?|technical\s+skills|key\s+skills|core\s+skills|projects?|academic\s+projects|personal\s+projects|certifications?|courses|trainings?|achievements?|awards|summary|profiles?(?:\s+summary)?|professional\s+summary|objective|career\s+objective|about\s+me|hobbies|interests|personal\s+(?:details|information|profile)|declaration|references?|strengths|extra[-\s]?curricular.*|positions?\s+of\s+responsibility|contact(?:\s+details)?|links)\s*:?$/i,
+  // Spoken languages: kept apart so "Hindi" isn't read as a skill.
+  languages: /^languages?(?:\s+known)?\s*:?$/i,
 };
 
 const SECTION_RX = { test: (line) => line.length <= 45 && Object.values(SECTIONS).some((rx) => rx.test(line)) };
 
+// Two-column resumes often put the heading on the same line as the first entry:
+// "Experience Full stack learning", "Education Maharaja Ganga Singh University".
+// The heading must be followed by a capitalised word, so a sentence like
+// "Experience in React…" isn't mistaken for one.
+const INLINE_HEADINGS = Object.entries({
+  experience: ['work experience', 'professional experience', 'employment history', 'work history', 'experience', 'employment', 'internships', 'internship'],
+  education: ['educational qualifications', 'education', 'academics', 'qualifications', 'qualification'],
+  languages: ['languages known', 'languages', 'language'],
+  other: ['technical skills', 'key skills', 'skills', 'projects', 'profiles', 'profile', 'summary', 'certifications', 'achievements', 'awards', 'hobbies', 'interests', 'objective', 'links'],
+}).flatMap(([section, words]) => words.map((w) => ({ section, rx: new RegExp(`^${w.replace(/ /g, '\\s+')}\\s*:?\\s+(?=[A-Z0-9])`, 'i') })));
+
+function inlineHeading(line) {
+  for (const { section, rx } of INLINE_HEADINGS) {
+    const m = rx.exec(line);
+    // The /i flag also makes the lookahead case-blind, so check the next letter separately.
+    if (m && /^[A-Z0-9]/.test(line.slice(m[0].length))) return { section, rest: line.slice(m[0].length) };
+  }
+  return null;
+}
+
 function sections(lines) {
-  const found = { top: [], experience: [], education: [], other: [] };
+  const found = { top: [], experience: [], education: [], other: [], languages: [] };
   let current = 'top';
   for (const line of lines) {
     const heading = line.length <= 45 && Object.keys(SECTIONS).find((k) => SECTIONS[k].test(line));
-    if (heading) current = heading;
-    else found[current].push(line);
+    if (heading) {
+      current = heading;
+      continue;
+    }
+    const inline = inlineHeading(line);
+    if (inline) {
+      current = inline.section;
+      found[current].push(inline.rest);
+    } else found[current].push(line);
   }
   return found;
 }
@@ -181,6 +210,11 @@ function findCollege(lines) {
     const parts = line.split(SPLIT);
     for (const [j, part] of parts.entries()) {
       let name = clean(part.replace(DATES, ' '));
+      // "Maharaja Ganga Singh University B.com" -> drop the degree written after the name.
+      for (const [, rx] of DEGREE_PATTERNS) {
+        const m = rx.exec(name.toLowerCase());
+        if (m && m.index > 0) name = clean(name.slice(0, m.index));
+      }
       if (!INSTITUTE_RX.test(name) || name.length < 4 || name.length > 90 || /^(the\s+)?(college|university|institute)$/i.test(name)) continue;
       // A long name can wrap onto the next line: "…Institute of Business" / "Management".
       const next = lines[i + 1];
@@ -248,8 +282,13 @@ export function extractProfile(raw) {
 
   // Skills: longest names first; each match is blanked out so "React Native"
   // doesn't also count as "React", while a separate "React" still does.
+  // Spoken languages ("Languages: Hindi, English") are not skills.
   const skills = [];
-  let rest = lower;
+  let rest = ['top', 'experience', 'education', 'other']
+    .flatMap((k) => parts[k])
+    .join(' ')
+    .toLowerCase()
+    .replace(/\bjava\s+script\b/g, 'javascript'); // "Java Script" is JavaScript, not Java
   for (const s of [...SKILLS].sort((a, b) => b.length - a.length)) {
     if (skills.length >= 15) break;
     const rx = new RegExp(`(^|[^a-z0-9])${escape(s.toLowerCase())}(?=$|[^a-z0-9])`, 'gi');
@@ -311,7 +350,16 @@ export function extractProfile(raw) {
   else if (ranges.length) out.experienceYears = Math.floor((monthsWorked(ranges) / 12) * 2) / 2;
   else if (/\bfresher\b/.test(lower)) out.experienceYears = 0;
 
+  // Without dates, a sentence like "Currently working as a Full Stack Developer at Zepfly
+  // Studio" still names the current job.
   const job = latestJob(jobLines, ranges);
+  if (!job.company) {
+    const m = /\b(?:[Cc]urrently|[Pp]resently)\s+(?:working|employed)\s+(?:as\s+(?:an?\s+)?(.{2,60}?)\s+)?(?:at|with)\s+([A-Z][A-Za-z0-9&.\- ]{1,40}?)(?=\s*[,.;(]|\s+(?:as|since|where|for|from|developing|working|building)\b|$)/.exec(jobLines.join(' '));
+    if (m) {
+      job.company = clean(m[2]);
+      if (m[1] && !job.post) job.post = clean(m[1]);
+    }
+  }
   if (job.company) out.currentCompany = job.company;
   if (job.post) out.currentPost = job.post;
 
