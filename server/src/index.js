@@ -21,7 +21,9 @@ import accountRoutes from './routes/account.js';
 
 const app = express();
 
-app.set('trust proxy', 1);
+// How many proxies sit in front of the server, so rate limits see the visitor's real IP:
+// 1 = Render alone; 2 = Vercel's /api proxy in front of Render (set TRUST_PROXY=2 there).
+app.set('trust proxy', Number(process.env.TRUST_PROXY) || 1);
 app.disable('x-powered-by');
 app.use(securityHeaders);
 // credentials: the login cookie is only accepted from our own site's origins.
