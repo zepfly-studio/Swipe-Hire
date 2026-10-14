@@ -7,6 +7,7 @@ import {
 } from 'lucide-react';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
+import ThemeArt from '../components/ThemeArt';
 import ThemeToggle from '../components/ThemeToggle';
 import { api, cx } from '../lib/api';
 import { addJsonLd } from '../lib/seo';
@@ -207,8 +208,9 @@ export default function LandingPage() {
               </span>
             </p>
           </motion.div>
-          <motion.img
-            src="/illustrations/hero-swipe.webp"
+          <ThemeArt
+            animated
+            name="hero-swipe"
             alt="A recruiter swiping right on a candidate card with a resume and intro video"
             width={960}
             height={674}
@@ -224,9 +226,10 @@ export default function LandingPage() {
         {/* How it works */}
         <section id="how-it-works" className="scroll-mt-20 px-4 py-16">
           <SectionHeading eyebrow="How it works" title="How Swipe Hire works" text="Three steps from profile to interview. No long forms, no inbox full of PDFs." />
-          <motion.img
+          <ThemeArt
+            animated
             {...fade}
-            src="/illustrations/how-it-works.webp"
+            name="how-it-works"
             alt="Three steps: swipe a candidate card, watch their intro video, shortlist and meet"
             width={1000}
             height={465}
@@ -253,9 +256,10 @@ export default function LandingPage() {
             text="Stop reading hundreds of resumes. See the person, the skills and the fit on one card, then shortlist with a swipe."
           />
           <div className="mx-auto mt-12 grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_1.3fr]">
-            <motion.img
+            <ThemeArt
+              animated
               {...fade}
-              src="/illustrations/for-companies.webp"
+              name="for-companies"
               alt="Candidate profile cards with a verified check mark"
               width={720}
               height={540}
@@ -293,9 +297,10 @@ export default function LandingPage() {
                 </motion.li>
               ))}
             </ul>
-            <motion.img
+            <ThemeArt
+              animated
               {...fade}
-              src="/illustrations/shortlisted.webp"
+              name="shortlisted"
               alt="A happy job seeker getting shortlisted on their phone"
               width={560}
               height={465}
@@ -331,7 +336,7 @@ export default function LandingPage() {
         {/* Final call to action */}
         <section className="px-4 pb-20 pt-8">
           <motion.div {...fade} className="relative mx-auto max-w-6xl overflow-hidden rounded-[32px] ring-1 ring-white/10">
-            <img src="/illustrations/cta-banner.webp" alt="" width={1600} height={592} loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right" />
+            <ThemeArt name="cta-banner" alt="" width={1600} height={592} loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right" />
             <div className="relative bg-linear-to-r from-ink-950 via-ink-950/85 to-transparent p-8 sm:p-12 md:w-2/3 md:bg-none md:from-transparent">
               <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
                 Right swipe, <span className="text-gradient">right job.</span>

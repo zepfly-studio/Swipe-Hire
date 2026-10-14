@@ -1,6 +1,7 @@
 import { Link } from 'react-router-dom';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
+import ThemeArt from '../components/ThemeArt';
 
 // Unknown URLs get a real "not found" page (marked noindex) instead of a silent redirect.
 export default function NotFoundPage() {
@@ -11,12 +12,12 @@ export default function NotFoundPage() {
         <Link to="/" className="inline-block" aria-label="Swipe Hire home">
           <Logo />
         </Link>
-        <img
-          src="/illustrations/not-found.webp"
+        <ThemeArt
+          name="not-found"
           alt=""
           width={640}
           height={480}
-          className="mx-auto mt-8 w-full max-w-sm rounded-3xl ring-1 ring-white/10"
+          className="mx-auto mt-8 w-full max-w-sm [&.dark-only]:rounded-3xl [&.dark-only]:ring-1 [&.dark-only]:ring-white/10"
           draggable={false}
         />
         <h1 className="mt-8 text-3xl font-extrabold tracking-tight">This page swiped left</h1>

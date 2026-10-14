@@ -5,6 +5,7 @@ import { Briefcase, Building2, Eye, EyeOff, Lock, Mail, User } from 'lucide-reac
 import toast from 'react-hot-toast';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
+import ThemeArt from '../components/ThemeArt';
 import ThemeToggle from '../components/ThemeToggle';
 import { Button, Field, Input } from '../components/ui';
 import { homePath, useAuth } from '../context/AuthContext';
@@ -79,8 +80,9 @@ export default function AuthPage() {
           <p className="mt-5 max-w-md text-lg text-white/55">
             Companies swipe through resumes and 15-second intro videos. Candidates get discovered without sending a hundred applications.
           </p>
-          <motion.img
-            src="/illustrations/hero-swipe.webp"
+          <ThemeArt
+            animated
+            name="hero-swipe"
             alt="A candidate card being swiped right on a phone"
             width={960}
             height={674}
