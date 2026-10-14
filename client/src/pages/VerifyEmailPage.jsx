@@ -123,7 +123,7 @@ export default function VerifyEmailPage() {
 
           {sent?.devCode && (
             <p className="mt-4 rounded-xl bg-amber-300/10 px-3 py-2 text-xs text-amber-200">
-              Local testing (no email service set up): your code is <b>{sent.devCode}</b>
+              Testing mode: your code is <b>{sent.devCode}</b>
             </p>
           )}
 

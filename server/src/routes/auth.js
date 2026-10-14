@@ -132,8 +132,11 @@ const OTP_WINDOW = 24 * 60 * 60 * 1000;
 const OTP_MAX_SENDS = 8; // per day
 const OTP_MAX_FAILS = 15; // per day
 const hashCode = (code) => crypto.createHash('sha256').update(String(code)).digest('hex');
-// Local development without an email service: the code is shown on screen instead.
-const showCodeOnScreen = () => !mailEnabled && !config.isProd;
+// The code is also shown on screen in local development without an email service, and
+// while SHOW_EMAIL_CODE=true (testing before the site has a domain, when the email service
+// can't reach everyone). That second case lets anyone sign up with any address, so turn it
+// off before launch.
+const showCodeOnScreen = () => (!mailEnabled && !config.isProd) || process.env.SHOW_EMAIL_CODE === 'true';
 
 // Sends a code, or reuses the one sent less than a minute ago (e.g. the page was refreshed).
 router.post('/email/send', auth, async (req, res) => {
@@ -168,6 +171,8 @@ router.post('/email/send', auth, async (req, res) => {
     });
   } catch (err) {
     console.error('[mail] verification code not sent:', err.message);
+    // Testing mode: the code is on screen anyway, so a failed email isn't a dead end.
+    if (showCodeOnScreen()) return res.json({ sentTo: user.email, retryIn: OTP_COOLDOWN / 1000, devCode: code });
     // Let the next tap send again right away instead of reusing a code that never arrived.
     await User.updateOne({ _id: user._id }, { $unset: { 'emailOtp.sentAt': 1 } });
     throw new HttpError(502, "We couldn't send the email right now. Please try again in a minute.");
