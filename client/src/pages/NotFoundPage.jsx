@@ -17,7 +17,7 @@ export default function NotFoundPage() {
           alt=""
           width={640}
           height={480}
-          className="mx-auto mt-8 w-full max-w-sm [&.dark-only]:rounded-3xl [&.dark-only]:ring-1 [&.dark-only]:ring-white/10"
+          className="mx-auto mt-8 w-full max-w-sm"
           draggable={false}
         />
         <h1 className="mt-8 text-3xl font-extrabold tracking-tight">This page swiped left</h1>
