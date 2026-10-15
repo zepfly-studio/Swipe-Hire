@@ -5,7 +5,7 @@ import crypto from 'node:crypto';
 import { User } from '../models/User.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
-import { auth, companyIdOf, endSession, startSession } from '../middleware/auth.js';
+import { auth, companyIdOf, endSession, startSession, SUSPENDED_MESSAGE } from '../middleware/auth.js';
 import { TeamInvite } from '../models/TeamInvite.js';
 import { hashToken } from './team.js';
 import { HttpError } from '../utils/HttpError.js';
@@ -122,6 +122,7 @@ router.post('/login', fromApp, limiter, async (req, res) => {
   if (!user || !(await bcrypt.compare(String(password || ''), user.password))) {
     throw new HttpError(401, 'Incorrect email or password');
   }
+  if (user.suspended) throw new HttpError(403, SUSPENDED_MESSAGE);
   res.json({ ...startSession(req, res, user), ...(await session(user)) });
 });
 

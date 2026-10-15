@@ -34,6 +34,8 @@ const candidateProfileSchema = new mongoose.Schema(
 
     // Job preferences. Candidates who turn openToWork off are hidden from companies.
     openToWork: { type: Boolean, default: true },
+    // Mirrors User.suspended so company feeds can skip suspended candidates in one query.
+    suspended: { type: Boolean, default: false },
     // Last time the candidate confirmed "I'm still looking". After ACTIVE_DAYS without a
     // confirmation the profile drops to the bottom of every company's feed.
     activeAt: { type: Date, default: Date.now, index: true },

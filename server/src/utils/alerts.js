@@ -7,7 +7,7 @@ import { notifyCompany } from './notify.js';
 // (with alerts on) that now matches them notifies its company — once per candidate.
 export async function alertSavedSearches(candidateId) {
   try {
-    const profile = await CandidateProfile.findOne({ user: candidateId, step: 3, openToWork: { $ne: false } })
+    const profile = await CandidateProfile.findOne({ user: candidateId, step: 3, openToWork: { $ne: false }, suspended: { $ne: true } })
       .populate('user', 'name')
       .lean();
     if (!profile?.user) return;

@@ -19,6 +19,8 @@ const userSchema = new mongoose.Schema(
       type: { hash: String, expires: Date, sentAt: Date, tries: Number, sends: Number, fails: Number, windowStart: Date, dev: String },
       select: false,
     },
+    // Set by an admin: the account can't log in and (for candidates) is hidden from companies.
+    suspended: { type: Boolean, default: false, index: true },
     // Bumped on password change / "log out everywhere": every older login stops working.
     tokenVersion: { type: Number, default: 0, select: false },
   },

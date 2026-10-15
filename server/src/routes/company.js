@@ -147,7 +147,7 @@ router.get('/feed', async (req, res) => {
   // they aren't shown at all: no swipe credits are spent on them.
   const profiles = await CandidateProfile.find({
     step: 3,
-    openToWork: { $ne: false },
+    openToWork: { $ne: false }, suspended: { $ne: true },
     user: { $nin: [...swiped, ...exclude] },
     $and: [feedFilters(req.query), salaryFitWhere(job)],
   })
@@ -178,7 +178,7 @@ router.post('/swipe', async (req, res) => {
   if (!['left', 'right'].includes(action)) throw new HttpError(400, 'Invalid swipe');
   const cid = req.user.companyId;
 
-  const candidate = await CandidateProfile.findOne({ user: candidateId, step: 3, openToWork: { $ne: false } }).populate('user', 'name email').lean();
+  const candidate = await CandidateProfile.findOne({ user: candidateId, step: 3, openToWork: { $ne: false }, suspended: { $ne: true } }).populate('user', 'name email').lean();
   if (!candidate?.user) throw new HttpError(404, 'Candidate not found');
   const job = await resolveJob(cid, jobId);
   if (action === 'right' && !salaryFits(candidate, job)) {
@@ -277,7 +277,7 @@ router.put('/wishlist/:candidateId', async (req, res) => {
     await Wishlist.deleteOne({ company: cid, candidate: candidateId });
     return res.json({ wishlisted: false });
   }
-  if (!(await CandidateProfile.exists({ user: candidateId, step: 3, openToWork: { $ne: false } }))) throw new HttpError(404, 'Candidate not found');
+  if (!(await CandidateProfile.exists({ user: candidateId, step: 3, openToWork: { $ne: false }, suspended: { $ne: true } }))) throw new HttpError(404, 'Candidate not found');
   try {
     await Wishlist.updateOne({ company: cid, candidate: candidateId }, { $setOnInsert: { company: cid, candidate: candidateId } }, { upsert: true });
   } catch (err) {
@@ -394,7 +394,7 @@ router.post('/searches', async (req, res) => {
     throw new HttpError(400, 'You can save up to 20 searches. Delete one first.');
   }
   // Candidates who already match are not "new" — don't alert for them.
-  const existing = await CandidateProfile.find({ step: 3, ...feedFilters(filters) }).distinct('user');
+  const existing = await CandidateProfile.find({ step: 3, suspended: { $ne: true }, ...feedFilters(filters) }).distinct('user');
   const s = await SavedSearch.create({
     company: req.user.companyId,
     createdBy: req.user.id,

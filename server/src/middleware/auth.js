@@ -43,6 +43,8 @@ const SAFE_METHODS = ['GET', 'HEAD', 'OPTIONS'];
 // The company "account" all company data hangs off: the owner's user id.
 export const companyIdOf = (user) => String(user.companyId || user._id);
 
+export const SUSPENDED_MESSAGE = 'This account has been suspended. Please contact support.';
+
 export async function auth(req, _res, next) {
   const header = req.headers.authorization || '';
   const bearer = header.startsWith('Bearer ') ? header.slice(7) : null;
@@ -60,9 +62,10 @@ export async function auth(req, _res, next) {
     throw new HttpError(401, 'Your session has expired, please log in again');
   }
   // Looked up every time so a removed team member is logged out immediately.
-  const user = await User.findById(payload.sub).select('role companyId emailVerified +tokenVersion').lean();
+  const user = await User.findById(payload.sub).select('role companyId emailVerified suspended +tokenVersion').lean();
   if (!user) throw new HttpError(401, 'Your account no longer exists, please log in again');
   if ((payload.v || 0) !== (user.tokenVersion || 0)) throw new HttpError(401, 'Your session has expired, please log in again');
+  if (user.suspended) throw new HttpError(401, SUSPENDED_MESSAGE);
   req.user = {
     id: payload.sub,
     role: user.role,
