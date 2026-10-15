@@ -482,7 +482,7 @@ router.post('/verification/email/send', async (req, res) => {
   );
   await sendMail({
     to: user.email,
-    subject: 'Your Swipe Hire verification code',
+    subject: 'Your Glide Recruit verification code',
     text: `Your code is ${code}. It expires in 10 minutes.\n\nIf you did not ask for this, you can ignore this email.`,
   });
   // Local development without SMTP: hand the code back so the flow can be tested.

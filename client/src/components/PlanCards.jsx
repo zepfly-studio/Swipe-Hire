@@ -49,11 +49,11 @@ export default function PlanCards({ onPurchased }) {
           amount: order.amount,
           currency: order.currency,
           order_id: order.orderId,
-          name: 'Swipe Hire',
+          name: 'Glide Recruit',
           description: `${plan.name} plan · ${plan.swipes} swipes`,
           prefill: { name: user?.name, email: user?.email },
           // Razorpay checkout in the site's accent colour.
-          theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim() || '#ec3d64' },
+          theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim() || '#0d6b50' },
           handler: (resp) =>
             verify({
               orderId: resp.razorpay_order_id,
@@ -87,7 +87,7 @@ export default function PlanCards({ onPurchased }) {
           </span>
           <p className="mt-4 text-lg font-bold">Free</p>
           <p className="mt-1 text-4xl font-extrabold">₹0</p>
-          <p className="mt-1 text-sm text-white/50">{info.freeSwipes} swipes to try Swipe Hire</p>
+          <p className="mt-1 text-sm text-white/50">{info.freeSwipes} swipes to try Glide Recruit</p>
           <ul className="mt-5 space-y-2 text-sm text-white/60">
             <li className="flex gap-2"><Check size={16} className="text-white/40" />Given on sign-up</li>
             <li className="flex gap-2"><Check size={16} className="text-white/40" />Resume & video access</li>

@@ -146,7 +146,7 @@ function Recorder({ onClip, onBusyChange }) {
         <video ref={videoRef} autoPlay muted playsInline className="h-full w-full -scale-x-100 object-cover" />
       ) : (
         <div className="flex h-full flex-col items-center justify-center gap-4 p-6 text-center">
-          <Illustration name="record-video" size="w-44 sm:w-48" />
+          <Illustration name="record-video" />
           {error ? (
             <p className="text-sm text-danger">{error}</p>
           ) : (
@@ -224,7 +224,7 @@ function Recorder({ onClip, onBusyChange }) {
                 cx="40"
                 cy="40"
                 r={R}
-                stroke="#ff4d6d"
+                stroke="#dc2626"
                 strokeWidth="5"
                 fill="none"
                 strokeLinecap="round"

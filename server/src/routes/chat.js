@@ -199,7 +199,7 @@ async function deliver(user, toId, text) {
       : (await User.findById(user.id).select('name').lean())?.name;
     const payload = {
       type: 'message',
-      title: `New message from ${senderName || 'Swipe Hire'}`,
+      title: `New message from ${senderName || 'Glide Recruit'}`,
       body: text.length > 120 ? `${text.slice(0, 117)}…` : text,
       link: `/messages?with=${isCompany ? pair.company : user.id}`,
       from,

@@ -40,7 +40,7 @@ router.post('/invite', requireOwner, async (req, res) => {
   const email = String(req.body?.email || '').trim().toLowerCase();
   if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Please enter a valid email address', { field: 'email' });
   const cid = req.user.companyId;
-  if (await User.exists({ email })) throw new HttpError(409, 'This email already has a Swipe Hire account', { field: 'email' });
+  if (await User.exists({ email })) throw new HttpError(409, 'This email already has a Glide Recruit account', { field: 'email' });
   const [members, pending] = await Promise.all([
     User.countDocuments({ $or: [{ _id: cid }, { companyId: cid }] }),
     TeamInvite.countDocuments({ company: cid, acceptedAt: null, expires: { $gt: new Date() } }),
@@ -65,7 +65,7 @@ router.post('/invite', requireOwner, async (req, res) => {
   const link = `${config.clientUrls[0]}/join?token=${token}`;
   await sendMail({
     to: email,
-    subject: `${inviter.name} invited you to ${company?.companyName || 'their team'} on Swipe Hire`,
+    subject: `${inviter.name} invited you to ${company?.companyName || 'their team'} on Glide Recruit`,
     text: `${inviter.name} added you as a recruiter for ${company?.companyName || 'their company'}.\n\nAccept the invite (valid for 7 days):\n${link}`,
   });
   res.status(201).json({ ok: true, devLink: !mailEnabled && !config.isProd ? link : undefined });

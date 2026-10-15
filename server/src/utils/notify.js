@@ -19,8 +19,8 @@ export async function notify(userId, { type, title, body = '', link = '', from, 
       if (user) {
         await sendMail({
           to: user.email,
-          subject: `${title} · Swipe Hire`,
-          text: `Hi ${user.name.split(' ')[0]},\n\n${body}\n\nOpen Swipe Hire: ${config.clientUrls[0]}${link}\n\n— Team Swipe Hire`,
+          subject: `${title} · Glide Recruit`,
+          text: `Hi ${user.name.split(' ')[0]},\n\n${body}\n\nOpen Glide Recruit: ${config.clientUrls[0]}${link}\n\n— Team Glide Recruit`,
         });
       }
     }

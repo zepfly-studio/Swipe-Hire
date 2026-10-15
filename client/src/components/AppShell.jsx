@@ -8,7 +8,6 @@ import {
 import Background from './Background';
 import Logo from './Logo';
 import NotificationBell from './NotificationBell';
-import ThemeToggle from './ThemeToggle';
 import Avatar from './Avatar';
 import { useAuth } from '../context/AuthContext';
 import { usePoll } from '../hooks/usePoll';
@@ -184,8 +183,8 @@ export default function AppShell({ children }) {
                     )}
                     <span className={cx('relative flex items-center gap-2', isActive ? 'text-white' : 'text-white/50 hover:text-white')}>
                       <l.icon size={16} />
-                      {/* Icons only on tablets, where seven labels don't fit. */}
-                      <span className="hidden lg:inline">{l.label}</span>
+                      {/* Icons only on narrower screens, where the labels don't fit (seven for companies). */}
+                      <span className={cx('hidden', links.length > 5 ? 'xl:inline' : 'lg:inline')}>{l.label}</span>
                       <Badge n={badges[l.badge]} />
                     </span>
                   </>
@@ -195,7 +194,6 @@ export default function AppShell({ children }) {
           </nav>
           <div className="ml-auto flex items-center gap-2">
             {isCompany && <SwipeCounter />}
-            <ThemeToggle />
             <NotificationBell />
             <ProfileMenu />
           </div>

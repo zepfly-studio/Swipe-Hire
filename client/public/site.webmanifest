@@ -1,14 +1,14 @@
 {
-  "name": "Swipe Hire – Hiring Platform & Job App",
-  "short_name": "Swipe Hire",
+  "name": "Glide Recruit – Hiring Platform & Job App",
+  "short_name": "Glide Recruit",
   "description": "Companies swipe through resumes and 15-second intro videos; job seekers find the best job opportunities.",
   "lang": "en-IN",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait",
-  "background_color": "#f5f5fa",
-  "theme_color": "#f5f5fa",
+  "background_color": "#f4f8f6",
+  "theme_color": "#f4f8f6",
   "categories": [
     "business",
     "productivity"

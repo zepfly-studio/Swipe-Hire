@@ -24,7 +24,7 @@ function ConversationList({ conversations, activeId, onPick, isCompany }) {
   if (!conversations.length) {
     return (
       <div className="px-6 py-16 text-center">
-        <Illustration name="no-messages" size="w-48 sm:w-52" />
+        <Illustration name="no-messages" />
         <p className="mt-3 font-semibold">No conversations yet</p>
         <p className="mt-1 text-sm text-white/45">
           {isCompany

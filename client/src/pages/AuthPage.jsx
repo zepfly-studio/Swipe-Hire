@@ -1,12 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { Briefcase, Building2, Eye, EyeOff, Lock, Mail, User } from 'lucide-react';
+import { BadgeCheck, Briefcase, Building2, Eye, EyeOff, FileText, Lock, Mail, User, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
-import ThemeArt from '../components/ThemeArt';
-import ThemeToggle from '../components/ThemeToggle';
 import { Button, Field, Input } from '../components/ui';
 import { homePath, useAuth } from '../context/AuthContext';
 import { api, cx, errorMessage } from '../lib/api';
@@ -60,9 +58,6 @@ export default function AuthPage() {
 
   return (
     <div className="relative min-h-dvh">
-      <div className="absolute right-4 top-4 z-30">
-        <ThemeToggle />
-      </div>
       <Background />
       <div className="mx-auto grid min-h-dvh max-w-6xl items-center gap-10 px-4 py-8 lg:grid-cols-2">
         <motion.section
@@ -80,17 +75,20 @@ export default function AuthPage() {
           <p className="mt-5 max-w-md text-lg text-white/55">
             Companies swipe through resumes and 15-second intro videos. Candidates get discovered without sending a hundred applications.
           </p>
-          <ThemeArt
-            animated
-            name="hero-swipe"
-            alt="A candidate card being swiped right on a phone"
-            width={960}
-            height={674}
-            className="mt-8 w-full max-w-[460px] select-none"
-            draggable={false}
-            animate={{ y: [0, -10, 0] }}
-            transition={{ duration: 5, repeat: Infinity, ease: 'easeInOut' }}
-          />
+          <ul className="mt-10 space-y-4">
+            {[
+              [FileText, 'One profile, auto-filled from your resume'],
+              [Video, 'A 15-second intro video instead of a cover letter'],
+              [BadgeCheck, 'Verified companies, contact details shared only on shortlist'],
+            ].map(([Icon, text]) => (
+              <li key={text} className="flex items-center gap-3 font-semibold text-white/75">
+                <span className="grid size-10 shrink-0 place-items-center rounded-xl bg-brand-500/10 text-brand-500 ring-1 ring-brand-500/15">
+                  <Icon size={20} />
+                </span>
+                {text}
+              </li>
+            ))}
+          </ul>
         </motion.section>
 
         <motion.section
@@ -134,7 +132,7 @@ export default function AuthPage() {
                 exit={{ opacity: 0, y: -8 }}
                 className="text-2xl font-extrabold"
               >
-                {mode === 'register' ? 'Join Swipe Hire' : 'Welcome back'}
+                {mode === 'register' ? 'Join Glide Recruit' : 'Welcome back'}
               </motion.h2>
             </AnimatePresence>
             <p className="mb-6 mt-1 text-sm text-white/50">

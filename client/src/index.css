@@ -3,65 +3,49 @@
 @theme {
   --font-sans: "Plus Jakarta Sans", ui-sans-serif, system-ui, sans-serif;
 
-  --color-ink-950: #07070d;
-  --color-ink-900: #0d0d17;
-  --color-ink-800: #14141f;
-  --color-ink-700: #1d1d2c;
-  --color-ink-600: #2a2a3d;
-
-  --color-brand-400: #ff6f8a;
-  --color-brand-500: #ff4d6d;
-  --color-brand-600: #e8385a;
-  --color-violet-brand: #7c5cff;
-  /* Errors and destructive actions, so they never take the brand colour. */
-  --color-danger: #fb7185;
-}
-
-/* Themes: data-theme on <html> (see src/lib/theme.js). The values above are the dark
-   theme. The components were written dark-first, so the light theme makes surfaces light
-   and "white" (used for text, borders and tints everywhere) near-black, flipping the whole
-   UI without touching markup. Its accent is sky blue to blue instead of pink to violet. */
-:root[data-theme='light'] {
-  color-scheme: light;
-  --color-ink-950: #f3f7fc;
+  /* One theme: white and soft green-grey surfaces, deep green brand, blue accents.
+     The components were written dark-first, so "ink" is the surface scale (light here) and
+     "white" is the text/border colour (near-black navy here); tints like white/10 become
+     soft greys on white. */
+  --color-ink-950: #f4f8f6;
   --color-ink-900: #ffffff;
-  --color-ink-800: #edf3fa;
-  --color-ink-700: #e1eaf5;
-  --color-ink-600: #cfdcec;
-  --color-white: #0f1b2d;
-  --color-brand-400: #0369a1;
-  --color-brand-500: #0284c7;
-  --color-brand-600: #0369a1;
-  --color-violet-brand: #2563eb;
+  --color-ink-800: #eef4f1;
+  --color-ink-700: #e1ebe6;
+  --color-ink-600: #cfdcd5;
+  --color-white: #13202b;
+
+  --color-brand-400: #0b5c45;
+  --color-brand-500: #0d6b50;
+  --color-brand-600: #0a4d3a;
+  --color-violet-brand: #0a5a43;
+  /* Errors and destructive actions, so they never take the brand colour. */
   --color-danger: #dc2626;
-  /* Status colours made darker so they stay readable on white. */
+
+  /* Status colours dark enough to read on white; sky and violet become the blue accent. */
   --color-emerald-200: #047857;
   --color-emerald-300: #047857;
   --color-emerald-400: #059669;
   --color-amber-100: #92400e;
   --color-amber-200: #b45309;
   --color-amber-300: #b45309;
-  --color-sky-300: #0369a1;
-  --color-sky-400: #0284c7;
-  --color-violet-300: #6d28d9;
+  --color-sky-300: #1d4ed8;
+  --color-sky-400: #2563eb;
+  --color-violet-300: #2563eb;
+  --color-violet-400: #1d4ed8;
 }
-/* Text on the coloured gradient (buttons, avatars, badges) stays white.
-   ~= matches whole class names only, so hover:bg-brand-500 buttons are left alone. */
-:root[data-theme='light'] :is(.btn-primary, [class~='from-brand-500'], [class~='bg-brand-500'], .bg-red-500) {
-  color: #fff;
-}
-:root[data-theme='light'] [class*='color-scheme:dark'] {
+
+:root {
   color-scheme: light;
 }
-/* Artwork that has a separate version per theme (e.g. the logo). */
-:root[data-theme='light'] .dark-only,
-:root:not([data-theme='light']) .light-only {
-  display: none;
+/* Text on the brand colour (buttons, avatars, badges) stays white.
+   ~= matches whole class names only, so hover:bg-brand-500 buttons are left alone. */
+:is(.btn-primary, [class~="from-brand-500"], [class~="bg-brand-500"], .bg-red-500) {
+  color: #fff;
 }
 
 @layer base {
   html {
-    color-scheme: dark;
+    color-scheme: light;
     -webkit-tap-highlight-color: transparent;
   }
   body {
@@ -80,17 +64,17 @@
 
 @layer components {
   .text-gradient {
-    @apply bg-linear-to-r from-brand-500 to-violet-brand bg-clip-text text-transparent;
+    @apply bg-linear-to-r from-brand-500 to-sky-400 bg-clip-text text-transparent;
   }
   .glass {
-    @apply border border-white/10 bg-white/[0.04] backdrop-blur-xl;
+    @apply border border-white/[0.08] bg-ink-900/95 shadow-sm shadow-black/[0.03] backdrop-blur-xl;
   }
   .input {
-    @apply w-full rounded-xl border border-white/10 bg-white/[0.04] px-4 py-3 text-[15px] text-white outline-none transition placeholder:text-white/30;
+    @apply w-full rounded-xl border border-white/15 bg-ink-900 px-4 py-3 text-[15px] text-white outline-none transition placeholder:text-white/30;
   }
   .input:focus,
   .input:focus-within {
-    @apply border-brand-500/60 bg-white/[0.06] ring-4 ring-brand-500/10;
+    @apply border-brand-500/60 bg-ink-900 ring-4 ring-brand-500/10;
   }
   .btn-primary,
   .btn-ghost {
@@ -100,7 +84,7 @@
     @apply bg-linear-to-r from-brand-500 to-violet-brand text-white shadow-lg shadow-brand-500/25 hover:shadow-brand-500/40;
   }
   .btn-ghost {
-    @apply border border-white/10 bg-white/5 text-white/80 hover:bg-white/10 hover:text-white;
+    @apply border border-white/15 bg-ink-900 text-white/80 hover:bg-ink-800 hover:text-white;
   }
   .chip {
     @apply inline-flex items-center gap-1.5 rounded-full bg-white/[0.06] px-3 py-1 text-xs font-medium text-white/70;

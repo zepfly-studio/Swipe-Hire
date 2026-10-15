@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import {
   ArrowRight, BadgeCheck, Briefcase, CalendarClock, Check, ChevronDown, ClipboardList, EyeOff, FileText, IndianRupee,
-  Layers, Lock, MessageCircle, Sparkles, Users, Video,
+  Layers, Lock, MessageCircle, Sparkles, Users, Video, X,
 } from 'lucide-react';
 import Background from '../components/Background';
-import Logo from '../components/Logo';
-import ThemeArt from '../components/ThemeArt';
-import ThemeToggle from '../components/ThemeToggle';
+import Logo, { LogoMark } from '../components/Logo';
 import { api, cx } from '../lib/api';
 import { addJsonLd } from '../lib/seo';
 
@@ -38,11 +36,11 @@ const FOR_CANDIDATES = [
 
 const FAQ = [
   {
-    q: 'What is Swipe Hire?',
-    a: 'Swipe Hire is a hiring platform where companies swipe through candidate cards (a resume plus a 15-second intro video) to shortlist the right people quickly, and job seekers get discovered for the best job opportunities without applying to hundreds of jobs.',
+    q: 'What is Glide Recruit?',
+    a: 'Glide Recruit is a hiring platform where companies swipe through candidate cards (a resume plus a 15-second intro video) to shortlist the right people quickly, and job seekers get discovered for the best job opportunities without applying to hundreds of jobs.',
   },
   {
-    q: 'Is Swipe Hire free for job seekers?',
+    q: 'Is Glide Recruit free for job seekers?',
     a: 'Yes. Creating a profile, getting shortlisted, chatting with companies, submitting tasks and attending interviews is completely free for candidates.',
   },
   {
@@ -50,11 +48,11 @@ const FAQ = [
     a: 'Every new company account gets free swipes to try it. After that, the Starter plan gives 150 swipes for ₹399. Saving candidates to your wishlist is always free.',
   },
   {
-    q: 'Why is Swipe Hire a better way to hire?',
+    q: 'Why is Glide Recruit a better way to hire?',
     a: 'Instead of reading long resumes one by one, you see a short video and the key details on one card, with a match score for your job. Shortlist with a swipe, then chat, send a task and schedule the interview in the same place.',
   },
   {
-    q: 'Can freshers find jobs on Swipe Hire?',
+    q: 'Can freshers find jobs on Glide Recruit?',
     a: 'Yes. Freshers can add their degree, college, skills and projects, and a short intro video helps them stand out even without work experience.',
   },
   {
@@ -125,6 +123,78 @@ function Pricing() {
   );
 }
 
+// Hero visual: a candidate card as it looks in the product (built in code, no artwork or faces).
+function HeroCard() {
+  return (
+    <motion.div
+      initial={{ opacity: 0, y: 24 }}
+      animate={{ opacity: 1, y: 0 }}
+      transition={{ duration: 0.6, delay: 0.15 }}
+      className="relative mx-auto w-full max-w-[440px]"
+      role="img"
+      aria-label="Example candidate card with a 92% match, intro video and resume"
+    >
+      <div className="absolute inset-x-8 -bottom-4 top-8 rounded-[28px] bg-brand-500/10 ring-1 ring-brand-500/10" aria-hidden="true" />
+      <div className="relative rounded-[28px] bg-ink-900 p-6 shadow-2xl shadow-brand-600/10 ring-1 ring-white/10" aria-hidden="true">
+        <div className="flex items-start gap-4">
+          <span className="grid size-14 shrink-0 place-items-center rounded-2xl bg-linear-to-br from-brand-500 to-brand-600 text-lg font-extrabold text-[#fff]">PS</span>
+          <div className="min-w-0 flex-1">
+            <p className="text-lg font-extrabold">Priya Sharma</p>
+            <p className="text-sm text-white/55">Frontend Developer · Bengaluru</p>
+          </div>
+          <span className="rounded-full bg-emerald-400/10 px-2.5 py-1 text-xs font-bold text-emerald-400 ring-1 ring-emerald-400/30">92% match</span>
+        </div>
+        <div className="mt-5 grid grid-cols-3 gap-2 text-center">
+          {[
+            ['4 yrs', 'Experience'],
+            ['₹8 LPA', 'Expected'],
+            ['15 days', 'Notice'],
+          ].map(([v, l]) => (
+            <div key={l} className="rounded-2xl bg-white/[0.04] px-2 py-3 ring-1 ring-white/5">
+              <p className="font-extrabold">{v}</p>
+              <p className="mt-0.5 text-[11px] font-semibold text-white/45">{l}</p>
+            </div>
+          ))}
+        </div>
+        <div className="mt-4 flex flex-wrap gap-1.5">
+          {['React', 'TypeScript', 'Node.js', 'Tailwind CSS'].map((t) => (
+            <span key={t} className="rounded-lg bg-sky-400/10 px-2.5 py-1 text-xs font-semibold text-sky-400">
+              {t}
+            </span>
+          ))}
+        </div>
+        <div className="mt-4 flex items-center gap-3 rounded-2xl bg-white/[0.04] p-3 ring-1 ring-white/5">
+          <span className="grid size-10 place-items-center rounded-xl bg-brand-500 text-[#fff]">
+            <Video size={18} />
+          </span>
+          <div className="min-w-0 flex-1">
+            <p className="text-sm font-bold">Intro video</p>
+            <p className="text-xs text-white/50">0:15 · Resume attached</p>
+          </div>
+          <FileText size={18} className="text-white/40" />
+        </div>
+        <div className="mt-6 flex items-center justify-center gap-4">
+          <span className="grid size-12 place-items-center rounded-full bg-white/[0.04] text-danger ring-1 ring-white/10">
+            <X size={20} />
+          </span>
+          <span className="grid size-14 place-items-center rounded-full bg-brand-500 text-[#fff] shadow-lg shadow-brand-500/30">
+            <Check size={24} />
+          </span>
+        </div>
+      </div>
+      <motion.div
+        initial={{ opacity: 0, x: 16 }}
+        animate={{ opacity: 1, x: 0 }}
+        transition={{ delay: 0.7 }}
+        className="absolute -left-3 bottom-20 hidden items-center gap-2 rounded-2xl bg-ink-900 px-3.5 py-2.5 text-sm font-bold shadow-xl shadow-black/10 ring-1 ring-white/10 sm:flex lg:-left-10"
+        aria-hidden="true"
+      >
+        <BadgeCheck size={18} className="text-emerald-400" /> Shortlisted
+      </motion.div>
+    </motion.div>
+  );
+}
+
 // Public home page: what search engines and new visitors see.
 export default function LandingPage() {
   useEffect(
@@ -147,7 +217,7 @@ export default function LandingPage() {
           className="mx-auto flex h-16 max-w-6xl items-center gap-3 rounded-[20px] border border-white/10 bg-ink-900/80 px-3 shadow-xl shadow-black/10 backdrop-blur-xl sm:px-4"
           aria-label="Main"
         >
-          <Link to="/" aria-label="Swipe Hire home">
+          <Link to="/" aria-label="Glide Recruit home">
             <Logo />
           </Link>
           <div className="ml-6 hidden items-center gap-1 text-sm font-semibold text-white/60 lg:flex">
@@ -164,7 +234,6 @@ export default function LandingPage() {
             ))}
           </div>
           <div className="ml-auto flex items-center gap-2">
-            <ThemeToggle />
             <Link to="/auth?mode=login" className="btn-ghost px-4 py-2 text-sm">
               Log in
             </Link>
@@ -177,8 +246,7 @@ export default function LandingPage() {
                 className="absolute inset-y-1 left-1 grid aspect-square place-items-center rounded-[12px] bg-[#fff] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:left-[calc(100%-2.5rem)]"
                 aria-hidden="true"
               >
-                <img src="/brand/mark-3d.webp" alt="" className="light-only size-7" />
-                <img src="/brand/logo-icon.webp" alt="" className="dark-only size-6" />
+                <LogoMark className="size-7" />
               </span>
               Get started
             </Link>
@@ -198,7 +266,7 @@ export default function LandingPage() {
               The best way to hire <span className="text-gradient">is a swipe.</span>
             </h1>
             <p className="mt-6 max-w-xl text-lg text-white/60">
-              Swipe Hire is the hiring platform where companies swipe through resumes and 15-second intro videos to shortlist the right people in minutes,
+              Glide Recruit is the hiring platform where companies swipe through resumes and 15-second intro videos to shortlist the right people in minutes,
               and job seekers find the best job opportunities without sending a hundred applications.
             </p>
             <div className="mt-8 flex flex-wrap gap-3">
@@ -223,36 +291,13 @@ export default function LandingPage() {
               </span>
             </p>
           </motion.div>
-          <ThemeArt
-            animated
-            name="hero-swipe"
-            alt="A recruiter swiping right on a candidate card with a resume and intro video"
-            width={960}
-            height={674}
-            fetchPriority="high"
-            className="mx-auto w-full max-w-[560px] select-none"
-            draggable={false}
-            initial={{ opacity: 0, scale: 0.94 }}
-            animate={{ opacity: 1, scale: 1, y: [0, -10, 0] }}
-            transition={{ opacity: { duration: 0.6 }, scale: { duration: 0.6 }, y: { duration: 5, repeat: Infinity, ease: 'easeInOut' } }}
-          />
+          <HeroCard />
         </section>
 
         {/* How it works */}
         <section id="how-it-works" className="scroll-mt-20 px-4 py-16">
-          <SectionHeading eyebrow="How it works" title="How Swipe Hire works" text="Three steps from profile to interview. No long forms, no inbox full of PDFs." />
-          <ThemeArt
-            animated
-            {...fade}
-            name="how-it-works"
-            alt="Three steps: swipe a candidate card, watch their intro video, shortlist and meet"
-            width={1000}
-            height={465}
-            loading="lazy"
-            className="mx-auto mt-10 w-full max-w-4xl select-none"
-            draggable={false}
-          />
-          <ol className="mx-auto mt-8 grid max-w-5xl gap-4 md:grid-cols-3">
+          <SectionHeading eyebrow="How it works" title="How Glide Recruit works" text="Three steps from profile to interview. No long forms, no inbox full of PDFs." />
+          <ol className="mx-auto mt-12 grid max-w-5xl gap-4 md:grid-cols-3">
             {STEPS.map((s, i) => (
               <motion.li key={s.title} {...fade} transition={{ duration: 0.5, delay: i * 0.1 }} className="glass rounded-3xl p-6">
                 <span className="grid h-10 w-10 place-items-center rounded-xl bg-linear-to-br from-brand-500 to-violet-brand font-extrabold text-white">{i + 1}</span>
@@ -270,19 +315,8 @@ export default function LandingPage() {
             title="A faster hiring platform for growing teams"
             text="Stop reading hundreds of resumes. See the person, the skills and the fit on one card, then shortlist with a swipe."
           />
-          <div className="mx-auto mt-12 grid max-w-6xl items-center gap-10 lg:grid-cols-[1fr_1.3fr]">
-            <ThemeArt
-              animated
-              {...fade}
-              name="for-companies"
-              alt="Candidate profile cards with a verified check mark"
-              width={720}
-              height={540}
-              loading="lazy"
-              className="mx-auto w-full max-w-md select-none"
-              draggable={false}
-            />
-            <div className="grid gap-4 sm:grid-cols-2">
+          <div className="mx-auto mt-12 max-w-6xl">
+            <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3">
               {FOR_COMPANIES.map((f, i) => (
                 <motion.div key={f.title} {...fade} transition={{ duration: 0.5, delay: (i % 2) * 0.08 }} className="glass rounded-3xl p-5">
                   <f.icon size={22} className="text-brand-500" />
@@ -301,8 +335,8 @@ export default function LandingPage() {
             title="Find the best job opportunities without endless applications"
             text="Make one great profile. Companies come to you, and you only hear from the ones that are interested. Perfect for freshers and experienced professionals."
           />
-          <div className="mx-auto mt-12 grid max-w-6xl items-center gap-10 lg:grid-cols-[1.3fr_1fr]">
-            <ul className="grid gap-3 sm:grid-cols-2">
+          <div className="mx-auto mt-12 max-w-6xl">
+            <ul className="grid gap-3 sm:grid-cols-2 lg:grid-cols-3">
               {FOR_CANDIDATES.map((f, i) => (
                 <motion.li key={f.text} {...fade} transition={{ duration: 0.5, delay: (i % 2) * 0.08 }} className="glass flex items-start gap-3 rounded-2xl p-4">
                   <span className="grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-violet-brand/10 text-violet-brand">
@@ -312,17 +346,6 @@ export default function LandingPage() {
                 </motion.li>
               ))}
             </ul>
-            <ThemeArt
-              animated
-              {...fade}
-              name="shortlisted"
-              alt="A happy job seeker getting shortlisted on their phone"
-              width={560}
-              height={465}
-              loading="lazy"
-              className="order-first mx-auto w-full max-w-sm select-none lg:order-none"
-              draggable={false}
-            />
           </div>
         </section>
 
@@ -350,18 +373,18 @@ export default function LandingPage() {
 
         {/* Final call to action */}
         <section className="px-4 pb-20 pt-8">
-          <motion.div {...fade} className="relative mx-auto max-w-6xl overflow-hidden rounded-[32px] ring-1 ring-white/10">
-            <ThemeArt name="cta-banner" alt="" width={1600} height={592} loading="lazy" className="absolute inset-0 h-full w-full object-cover object-right" />
-            <div className="relative bg-linear-to-r from-ink-950 via-ink-950/85 to-transparent p-8 sm:p-12 md:w-2/3 md:bg-none md:from-transparent">
-              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">
-                Right swipe, <span className="text-gradient">right job.</span>
-              </h2>
-              <p className="mt-3 max-w-md text-white/65">Join the hiring platform built for speed. It takes less than 2 minutes to start.</p>
+          <motion.div {...fade} className="relative mx-auto max-w-6xl overflow-hidden rounded-[32px] bg-linear-to-br from-brand-500 to-brand-600 p-8 text-[#fff] sm:p-12">
+            {/* Soft shapes for depth; no artwork. */}
+            <div className="pointer-events-none absolute -right-24 -top-24 size-80 rounded-full border-[40px] border-[#fff]/[0.06]" aria-hidden="true" />
+            <div className="pointer-events-none absolute -bottom-32 right-32 size-72 rounded-full bg-[#2563eb]/25 blur-3xl" aria-hidden="true" />
+            <div className="relative md:w-2/3">
+              <h2 className="text-3xl font-extrabold tracking-tight sm:text-4xl">Right swipe, right job.</h2>
+              <p className="mt-3 max-w-md text-[#fff]/75">Join the hiring platform built for speed. It takes less than 2 minutes to start.</p>
               <div className="mt-6 flex flex-wrap gap-3">
-                <Link to="/auth?role=company" className="btn-primary">
+                <Link to="/auth?role=company" className="inline-flex items-center justify-center gap-2 rounded-xl bg-[#fff] px-5 py-3 text-[15px] font-semibold text-brand-600 transition hover:bg-[#fff]/90">
                   Start hiring
                 </Link>
-                <Link to="/auth" className="btn-ghost bg-ink-900/80">
+                <Link to="/auth" className="inline-flex items-center justify-center gap-2 rounded-xl border border-[#fff]/40 px-5 py-3 text-[15px] font-semibold text-[#fff] transition hover:bg-[#fff]/10">
                   Find a job
                 </Link>
               </div>
@@ -374,7 +397,7 @@ export default function LandingPage() {
         <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
           <div>
             <Logo tagline />
-            <p className="mt-3 text-sm text-white/45">© {new Date().getFullYear()} Swipe Hire. Made in India.</p>
+            <p className="mt-3 text-sm text-white/45">© {new Date().getFullYear()} Glide Recruit. Made in India.</p>
           </div>
           <nav aria-label="Footer" className={cx('flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-white/55')}>
             <a href="#how-it-works" className="hover:text-white">How it works</a>

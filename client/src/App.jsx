@@ -79,8 +79,8 @@ function OfflineScreen({ onRetry }) {
   return (
     <div className="grid min-h-dvh place-items-center px-6 text-center">
       <div>
-        <Illustration name="offline" size="w-64 sm:w-72" />
-        <h1 className="mt-4 text-2xl font-extrabold">Can't reach Swipe Hire</h1>
+        <Illustration name="offline" />
+        <h1 className="mt-4 text-2xl font-extrabold">Can't reach Glide Recruit</h1>
         <p className="mt-2 text-white/55">Check your internet connection and try again.</p>
         <button onClick={onRetry} className="btn-primary mt-6">
           Try again

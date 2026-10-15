@@ -21,7 +21,7 @@ const fmt = (d) =>
   new Date(d).toLocaleString('en-IN', { dateStyle: 'medium', timeStyle: 'short', timeZone: 'Asia/Kolkata' });
 
 // Free video room, no account needed. Hard-to-guess name so strangers can't join.
-const jitsiLink = () => `https://meet.jit.si/SwipeHire-${crypto.randomBytes(6).toString('hex')}`;
+const jitsiLink = () => `https://meet.jit.si/GlideRecruit-${crypto.randomBytes(6).toString('hex')}`;
 
 async function load(req, id) {
   if (!mongoose.isValidObjectId(id)) throw new HttpError(400, 'Invalid interview');

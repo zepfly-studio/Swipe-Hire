@@ -2,10 +2,10 @@
 // Public pages are indexed; everything behind login is marked noindex.
 
 export const SITE_URL = import.meta.env.VITE_SITE_URL || 'https://swipehire.in';
-export const SITE_NAME = 'Swipe Hire';
+export const SITE_NAME = 'Glide Recruit';
 
 const HOME = {
-  title: 'Swipe Hire – Best Hiring Platform & Job App in India',
+  title: 'Glide Recruit – Best Hiring Platform & Job App in India',
   description:
     'Find the best job opportunities and hire faster. Companies swipe through resumes and 15-second video intros; candidates get shortlisted without endless applications.',
 };
@@ -13,9 +13,9 @@ const HOME = {
 const PUBLIC = {
   '/': HOME,
   '/auth': {
-    title: 'Sign Up or Log In – Swipe Hire',
+    title: 'Sign Up or Log In – Glide Recruit',
     description:
-      'Create a free Swipe Hire account. Job seekers get discovered by top companies; recruiters hire faster by swiping through video resumes.',
+      'Create a free Glide Recruit account. Job seekers get discovered by top companies; recruiters hire faster by swiping through video resumes.',
   },
 };
 

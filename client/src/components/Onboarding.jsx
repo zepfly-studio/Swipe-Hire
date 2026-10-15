@@ -4,7 +4,6 @@ import { LogOut, X } from 'lucide-react';
 import Background from './Background';
 import Illustration from './Illustration';
 import Logo from './Logo';
-import ThemeToggle from './ThemeToggle';
 import Modal from './Modal';
 import { Burst, Button, ProgressBar } from './ui';
 import { homePath, useAuth } from '../context/AuthContext';
@@ -20,7 +19,6 @@ export function OnboardingShell({ children }) {
       <header className="relative z-[60] mx-auto flex max-w-6xl items-center justify-between gap-2 px-4 py-5">
         <Logo />
         <div className="flex items-center gap-2">
-        <ThemeToggle />
         {editing ? (
           // Editing an existing profile: let people leave without finishing every step.
           <Link to={homePath(user, profile)} replace onClick={clearAllDrafts} className="btn-ghost px-3 py-2 text-sm">

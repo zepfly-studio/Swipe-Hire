@@ -27,7 +27,7 @@ const transport = smtpEnabled
     })
   : null;
 
-// "Swipe Hire <no-reply@x.com>" -> { name, email }
+// "Glide Recruit <no-reply@x.com>" -> { name, email }
 function parseFrom(value) {
   const m = /^\s*(.*?)\s*<([^>]+)>\s*$/.exec(value);
   return m ? { name: m[1] || undefined, email: m[2] } : { email: value.trim() };

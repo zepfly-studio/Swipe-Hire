@@ -27,7 +27,7 @@ export default function SettingsPage() {
 
   // Ends every login, including this one (e.g. after using a shared computer).
   const logoutEverywhere = async () => {
-    if (!window.confirm('Log out of Swipe Hire on all devices, including this one?')) return;
+    if (!window.confirm('Log out of Glide Recruit on all devices, including this one?')) return;
     setEndingAll(true);
     try {
       await api.post('/auth/logout-all');
@@ -158,7 +158,7 @@ export default function SettingsPage() {
             Update password
           </Button>
           <div className="flex flex-wrap items-center justify-between gap-3 border-t border-white/10 pt-5">
-            <p className="text-sm text-white/55">Used Swipe Hire on a shared or lost device?</p>
+            <p className="text-sm text-white/55">Used Glide Recruit on a shared or lost device?</p>
             <Button className="btn-ghost text-sm" onClick={logoutEverywhere} loading={endingAll}>
               <LogOut size={16} />
               Log out of all devices

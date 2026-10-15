@@ -1,4 +1,4 @@
-import { Suspense, useState } from 'react';
+import { Component, Suspense, useState } from 'react';
 import { Document, Page, pdfjs } from 'react-pdf';
 import { FileWarning, LoaderCircle } from 'lucide-react';
 
@@ -24,10 +24,23 @@ function Failed() {
   );
 }
 
+// react-pdf throws when a file cannot be fetched (e.g. a 404), which its error prop does not
+// catch. Without this boundary one missing resume would blank the whole page.
+class PdfBoundary extends Component {
+  state = { failed: false };
+  static getDerivedStateFromError() {
+    return { failed: true };
+  }
+  render() {
+    return this.state.failed ? <Failed /> : this.props.children;
+  }
+}
+
 // react-pdf suspends while a document loads. Without a boundary right here React
 // would hide the whole page behind the route's loading spinner (e.g. on every swipe).
 export function PdfFirstPage({ file, width }) {
   return (
+    <PdfBoundary key={file}>
     <Suspense fallback={<Loading />}>
       <Document file={file} loading={<Loading />} error={<Failed />}>
         {width > 0 && (
@@ -35,12 +48,14 @@ export function PdfFirstPage({ file, width }) {
         )}
       </Document>
     </Suspense>
+    </PdfBoundary>
   );
 }
 
 export function PdfAllPages({ file, width }) {
   const [pages, setPages] = useState(0);
   return (
+    <PdfBoundary key={file}>
     <Suspense fallback={<Loading />}>
       <Document file={file} loading={<Loading />} error={<Failed />} onLoadSuccess={({ numPages }) => setPages(numPages)}>
         {width > 0 &&
@@ -57,5 +72,6 @@ export function PdfAllPages({ file, width }) {
           ))}
       </Document>
     </Suspense>
+    </PdfBoundary>
   );
 }

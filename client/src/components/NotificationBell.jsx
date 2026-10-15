@@ -113,7 +113,7 @@ export default function NotificationBell() {
             <div className="no-scrollbar max-h-[60vh] overflow-y-auto">
               {data.notifications.length === 0 && (
                 <div className="px-4 py-8 text-center">
-                  <Illustration name="no-notifications" size="w-28" />
+                  <Illustration name="no-notifications" small />
                   <p className="mt-2 text-sm text-white/45">No notifications yet</p>
                 </div>
               )}

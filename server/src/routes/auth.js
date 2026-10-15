@@ -166,8 +166,8 @@ router.post('/email/send', auth, async (req, res) => {
   try {
     await sendMail({
       to: user.email,
-      subject: `${code} is your Swipe Hire code`,
-      text: `Hi ${user.name.split(' ')[0]},\n\nYour Swipe Hire verification code is ${code}. It expires in 15 minutes.\n\nIf you didn't create a Swipe Hire account, you can ignore this email.\n\n— Team Swipe Hire`,
+      subject: `${code} is your Glide Recruit code`,
+      text: `Hi ${user.name.split(' ')[0]},\n\nYour Glide Recruit verification code is ${code}. It expires in 15 minutes.\n\nIf you didn't create a Glide Recruit account, you can ignore this email.\n\n— Team Glide Recruit`,
     });
   } catch (err) {
     console.error('[mail] verification code not sent:', err.message);

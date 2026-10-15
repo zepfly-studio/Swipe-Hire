@@ -25,7 +25,7 @@ export const config = {
     port: Number(process.env.SMTP_PORT) || 587,
     user: process.env.SMTP_USER,
     pass: process.env.SMTP_PASS,
-    from: process.env.MAIL_FROM || 'Swipe Hire <no-reply@swipehire.in>',
+    from: process.env.MAIL_FROM || 'Glide Recruit <no-reply@swipehire.in>',
   },
   razorpay: {
     keyId: process.env.RAZORPAY_KEY_ID,

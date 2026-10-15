@@ -91,7 +91,7 @@ function Form({ candidate, onClose, onScheduled }) {
                     value={s}
                     min={localInputValue(new Date())}
                     onChange={(e) => setSlots((all) => all.map((x, j) => (j === i ? e.target.value : x)))}
-                    className="input flex-1 [color-scheme:dark]"
+                    className="input flex-1"
                     aria-label={`Time option ${i + 1}`}
                   />
                   {slots.length > 1 && (
