@@ -64,7 +64,7 @@
 
 @layer components {
   .text-gradient {
-    @apply bg-linear-to-r from-brand-500 from-45% to-sky-400 bg-clip-text text-transparent;
+    @apply bg-linear-to-r from-brand-600 from-45% to-sky-300 bg-clip-text text-transparent;
   }
   .glass {
     @apply border border-white/[0.08] bg-ink-900/95 shadow-sm shadow-black/[0.03] backdrop-blur-xl;
