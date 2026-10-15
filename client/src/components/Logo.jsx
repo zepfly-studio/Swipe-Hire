@@ -13,23 +13,32 @@ export function LogoMark({ className }) {
   );
 }
 
-// Mark + "Glide Recruit" wordmark. `tagline` adds a line under the name.
+// Mark + "Glide Recruit" wordmark. `tagline` shows the client's full logo artwork instead
+// (mark, wordmark and "Right glide, right job."; public/brand/logo-full.webp).
 export default function Logo({ animated = false, tagline = false }) {
+  const motionProps = {
+    initial: animated ? { opacity: 0, scale: 0.92 } : false,
+    animate: { opacity: 1, scale: 1 },
+    transition: { type: 'spring', stiffness: 220, damping: 18, delay: 0.1 },
+  };
+  if (tagline) {
+    return (
+      <motion.img
+        {...motionProps}
+        src="/brand/logo-full.webp"
+        alt="Glide Recruit · Right glide, right job."
+        width={1344}
+        height={395}
+        draggable={false}
+        className="h-16 w-auto select-none sm:h-24"
+      />
+    );
+  }
   return (
-    <motion.span
-      className="inline-flex select-none items-center gap-2.5"
-      initial={animated ? { opacity: 0, scale: 0.92 } : false}
-      animate={{ opacity: 1, scale: 1 }}
-      transition={{ type: 'spring', stiffness: 220, damping: 18, delay: 0.1 }}
-      role="img"
-      aria-label="Glide Recruit"
-    >
-      <LogoMark className={cx('shrink-0', tagline ? 'size-12 sm:size-14' : 'size-10')} />
-      <span className="flex flex-col leading-none" aria-hidden="true">
-        <span className={cx('whitespace-nowrap font-extrabold tracking-tight', tagline ? 'text-2xl sm:text-[28px]' : 'text-xl')}>
-          <span className="text-white">Glide</span> <span className="text-brand-500">Recruit</span>
-        </span>
-        {tagline && <span className="mt-1.5 text-xs font-medium text-white/50 sm:text-sm">Find the right people, faster.</span>}
+    <motion.span {...motionProps} className="inline-flex select-none items-center gap-2.5" role="img" aria-label="Glide Recruit">
+      <LogoMark className="size-10 shrink-0" />
+      <span className="whitespace-nowrap text-xl font-extrabold leading-none tracking-tight" aria-hidden="true">
+        <span className="text-white">Glide</span> <span className="text-brand-500">Recruit</span>
       </span>
     </motion.span>
   );
