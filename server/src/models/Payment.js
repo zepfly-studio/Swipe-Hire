@@ -8,8 +8,12 @@ const paymentSchema = new mongoose.Schema(
     swipes: { type: Number, required: true },
     orderId: { type: String, required: true, unique: true },
     paymentId: String,
-    mode: { type: String, enum: ['razorpay', 'demo'], required: true },
-    status: { type: String, enum: ['created', 'paid'], default: 'created' },
+    mode: { type: String, enum: ['razorpay', 'demo', 'manual'], required: true },
+    status: { type: String, enum: ['created', 'paid', 'refunded'], default: 'created' },
+    couponCode: String,
+    listPrice: Number, // rupees before the coupon
+    note: String, // manual payments and refunds
+    refundedAt: Date,
   },
   { timestamps: true },
 );

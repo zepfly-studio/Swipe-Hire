@@ -14,7 +14,7 @@ export function signToken(user) {
   });
 }
 
-const cookieOptions = () => ({
+export const cookieOptions = () => ({
   httpOnly: true,
   secure: config.isProd || config.cookieSameSite === 'none', // browsers require Secure for SameSite=None
   sameSite: config.cookieSameSite,
@@ -30,7 +30,7 @@ export function startSession(req, res, user) {
 
 export const endSession = (res) => res.clearCookie(SESSION_COOKIE, cookieOptions());
 
-function readCookie(req, name) {
+export function readCookie(req, name) {
   for (const part of (req.headers.cookie || '').split(';')) {
     const i = part.indexOf('=');
     if (i > 0 && part.slice(0, i).trim() === name) return decodeURIComponent(part.slice(i + 1).trim());

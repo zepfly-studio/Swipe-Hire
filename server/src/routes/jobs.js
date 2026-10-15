@@ -4,7 +4,7 @@ import { auth, requireRole, requireVerified } from '../middleware/auth.js';
 import { Job } from '../models/Job.js';
 import { Swipe } from '../models/Swipe.js';
 import { HttpError } from '../utils/HttpError.js';
-import { jobFields, publicJob } from '../utils/jobs.js';
+import { jobFields, needsApproval, publicJob } from '../utils/jobs.js';
 
 const router = Router();
 router.use(auth, requireVerified, requireRole('company'));
@@ -51,7 +51,8 @@ router.post('/', async (req, res) => {
   if ((await Job.countDocuments({ company: req.user.companyId, status: { $ne: 'closed' } })) >= MAX_OPEN_JOBS) {
     throw new HttpError(400, `You can have up to ${MAX_OPEN_JOBS} active jobs. Close an old one first.`);
   }
-  const job = await Job.create({ ...jobFields(req.body), company: req.user.companyId, createdBy: req.user.id });
+  const pending = await needsApproval(req.user.companyId);
+  const job = await Job.create({ ...jobFields(req.body), company: req.user.companyId, createdBy: req.user.id, ...(pending && { approved: false }) });
   res.status(201).json({ job: publicJob(job) });
 });
 

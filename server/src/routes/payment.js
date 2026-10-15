@@ -2,7 +2,9 @@ import crypto from 'node:crypto';
 import { Router } from 'express';
 import Razorpay from 'razorpay';
 import { auth, requireRole, requireVerified } from '../middleware/auth.js';
-import { config, PLANS, razorpayEnabled, demoPayments } from '../config/index.js';
+import { config, razorpayEnabled } from '../config/index.js';
+import { getPlans, getFreeSwipes, demoPaymentsOn } from '../utils/settings.js';
+import { Coupon } from '../models/Coupon.js';
 import { Payment } from '../models/Payment.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
 import { HttpError } from '../utils/HttpError.js';
@@ -29,12 +31,24 @@ async function creditOrder(payment, paymentId) {
     },
   );
   await Payment.updateOne({ _id: payment._id }, { status: 'paid', paymentId: paymentId || payment.paymentId || payment.orderId });
+  if (res.modifiedCount === 1 && payment.couponCode) await Coupon.updateOne({ code: payment.couponCode }, { $inc: { uses: 1 } });
   return res.modifiedCount === 1 ? payment.swipes : 0;
 }
 
 router.get('/plans', (_req, res) => {
-  res.json({ plans: PLANS, freeSwipes: config.freeSwipes, demoMode: demoPayments });
+  res.json({ plans: getPlans(), freeSwipes: getFreeSwipes(), demoMode: demoPaymentsOn() });
 });
+
+// A usable coupon for this plan, or an error saying why not.
+async function findCoupon(code, planId) {
+  const c = await Coupon.findOne({ code: String(code || '').trim().toUpperCase() }).lean();
+  if (!c || !c.active) throw new HttpError(404, 'This coupon code is not valid', { field: 'coupon' });
+  if (c.expiresAt && c.expiresAt < new Date()) throw new HttpError(400, 'This coupon has expired', { field: 'coupon' });
+  if (c.maxUses && c.uses >= c.maxUses) throw new HttpError(400, 'This coupon has been fully used', { field: 'coupon' });
+  if (c.planIds?.length && !c.planIds.includes(planId)) throw new HttpError(400, 'This coupon does not apply to this plan', { field: 'coupon' });
+  return c;
+}
+const discounted = (price, coupon) => (coupon ? Math.max(1, Math.round(price * (1 - coupon.percentOff / 100))) : price);
 
 // Razorpay -> server notification. Credits orders even if the buyer closed the tab.
 export async function razorpayWebhook(req, res) {
@@ -55,15 +69,25 @@ export async function razorpayWebhook(req, res) {
 
 router.use(auth, requireVerified, requireRole('company'));
 
-router.post('/order', async (req, res) => {
-  const plan = PLANS.find((p) => p.id === req.body?.planId);
+// Shows the price with a coupon before paying.
+router.get('/coupon', async (req, res) => {
+  const plan = getPlans().find((p) => p.id === req.query.planId);
   if (!plan) throw new HttpError(400, 'Please choose a valid plan');
-  if (!razorpay && !demoPayments) throw new HttpError(503, 'Payments are not available right now');
+  const coupon = await findCoupon(req.query.code, plan.id);
+  res.json({ code: coupon.code, percentOff: coupon.percentOff, price: discounted(plan.price, coupon), listPrice: plan.price });
+});
+
+router.post('/order', async (req, res) => {
+  const plan = getPlans().find((p) => p.id === req.body?.planId);
+  if (!plan) throw new HttpError(400, 'Please choose a valid plan');
+  if (!razorpay && !demoPaymentsOn()) throw new HttpError(503, 'Payments are not available right now');
+  const coupon = req.body?.coupon ? await findCoupon(req.body.coupon, plan.id) : null;
+  const price = discounted(plan.price, coupon);
 
   let orderId;
   if (razorpay) {
     const order = await razorpay.orders.create({
-      amount: plan.price * 100,
+      amount: price * 100,
       currency: 'INR',
       receipt: `sh_${Date.now()}`,
       notes: { planId: plan.id, company: req.user.companyId },
@@ -76,7 +100,9 @@ router.post('/order', async (req, res) => {
   await Payment.create({
     company: req.user.companyId,
     planId: plan.id,
-    amount: plan.price,
+    amount: price,
+    listPrice: plan.price,
+    couponCode: coupon?.code,
     swipes: plan.swipes,
     orderId,
     mode: razorpay ? 'razorpay' : 'demo',
@@ -85,7 +111,7 @@ router.post('/order', async (req, res) => {
   res.json({
     mode: razorpay ? 'razorpay' : 'demo',
     orderId,
-    amount: plan.price * 100,
+    amount: price * 100,
     currency: 'INR',
     keyId: config.razorpay.keyId,
     plan,
@@ -101,7 +127,7 @@ router.post('/verify', async (req, res) => {
     if (!razorpay || !safeEqual(signature, hmac(config.razorpay.keySecret, `${orderId}|${paymentId}`))) {
       throw new HttpError(400, 'Payment verification failed');
     }
-  } else if (!demoPayments) {
+  } else if (!demoPaymentsOn()) {
     throw new HttpError(400, 'Payment verification failed');
   }
 

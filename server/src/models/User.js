@@ -21,6 +21,10 @@ const userSchema = new mongoose.Schema(
     },
     // Set by an admin: the account can't log in and (for candidates) is hidden from companies.
     suspended: { type: Boolean, default: false, index: true },
+    // Admin panel access below the ADMIN_EMAILS super admins (set by a super admin).
+    adminRole: { type: String, enum: ['moderator', 'support', 'finance'] },
+    // Second step of the admin login: a one-time code emailed to the admin.
+    adminOtp: { type: { hash: String, expires: Date, tries: Number }, select: false },
     // Bumped on password change / "log out everywhere": every older login stops working.
     tokenVersion: { type: Number, default: 0, select: false },
   },

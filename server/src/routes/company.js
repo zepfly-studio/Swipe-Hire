@@ -21,9 +21,10 @@ import { storeUpload } from '../utils/storage.js';
 import { feedFilters, normalizeFilters, toCard } from '../utils/candidates.js';
 import { salaryFits, salaryFitWhere } from '../utils/match.js';
 import { feedRank } from '../utils/activity.js';
-import { jobFields, publicJob, resolveJob } from '../utils/jobs.js';
+import { jobFields, needsApproval, publicJob, resolveJob } from '../utils/jobs.js';
 import { notify } from '../utils/notify.js';
-import { sendMail, mailEnabled } from '../utils/mailer.js';
+import { sendMail } from '../utils/mailer.js';
+import { showEmailCodeOn } from '../utils/settings.js';
 import { config } from '../config/index.js';
 
 const router = Router();
@@ -102,7 +103,7 @@ router.put('/profile', async (req, res) => {
   if (!(await Job.exists({ company: cid }))) {
     const job = jobFields(b);
     job.jobLocation = job.jobLocation || data.location;
-    await Job.create({ ...job, company: cid, createdBy: req.user.id });
+    await Job.create({ ...job, company: cid, createdBy: req.user.id, ...((await needsApproval(cid)) && { approved: false }) });
     // Kept on the profile for older screens; jobs are the source of truth now.
     data.hiringFor = job.title;
     data.requiredSkills = job.requiredSkills;
@@ -128,6 +129,7 @@ router.get('/feed', async (req, res) => {
   const company = await getCompany(req);
   if (!company.completed) throw new HttpError(403, 'Please complete your hiring requirements first');
   const job = await resolveJob(req.user.companyId, req.query.jobId);
+  if (job.approved === false) throw new HttpError(409, 'This job is waiting for approval by the Glide Recruit team. You can start swiping once it is approved, usually within a few hours.', { code: 'JOB_PENDING' });
   if (job.status !== 'open') throw new HttpError(409, 'This job is paused or closed. Reopen it to see candidates.');
 
   const exclude = String(req.query.exclude || '')
@@ -181,6 +183,7 @@ router.post('/swipe', async (req, res) => {
   const candidate = await CandidateProfile.findOne({ user: candidateId, step: 3, openToWork: { $ne: false }, suspended: { $ne: true } }).populate('user', 'name email').lean();
   if (!candidate?.user) throw new HttpError(404, 'Candidate not found');
   const job = await resolveJob(cid, jobId);
+  if (job.approved === false) throw new HttpError(409, 'This job is waiting for approval by the Glide Recruit team.', { code: 'JOB_PENDING' });
   if (action === 'right' && !salaryFits(candidate, job)) {
     throw new HttpError(
       409,
@@ -513,7 +516,7 @@ router.post('/verification/email/send', async (req, res) => {
     text: `Your code is ${code}. It expires in 10 minutes.\n\nIf you did not ask for this, you can ignore this email.`,
   });
   // Local development without SMTP: hand the code back so the flow can be tested.
-  res.json({ sentTo: user.email, devCode: !mailEnabled && !config.isProd ? code : undefined });
+  res.json({ sentTo: user.email, devCode: showEmailCodeOn() ? code : undefined });
 });
 
 router.post('/verification/email/confirm', async (req, res) => {

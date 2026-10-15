@@ -39,6 +39,8 @@ const candidateProfileSchema = new mongoose.Schema(
     // Last time the candidate confirmed "I'm still looking". After ACTIVE_DAYS without a
     // confirmation the profile drops to the bottom of every company's feed.
     activeAt: { type: Date, default: Date.now, index: true },
+    // Admin check of the resume and intro video. No status yet = waiting for review.
+    review: { status: { type: String, enum: ['approved', 'rejected'] }, note: String, at: Date },
     preferredLocations: [String],
     workModes: [{ type: String, enum: ['onsite', 'remote', 'hybrid'] }],
     jobTypes: [{ type: String, enum: ['full-time', 'part-time', 'internship', 'contract'] }],

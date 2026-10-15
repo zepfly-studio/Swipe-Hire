@@ -3,6 +3,7 @@ import { Job } from '../models/Job.js';
 import { HttpError } from './HttpError.js';
 import { cleanList } from './pick.js';
 import { num, salary, text, requireFields, stripUndefined } from './fields.js';
+import { requireJobApproval } from './settings.js';
 
 export const WORK_MODES = ['onsite', 'remote', 'hybrid'];
 export const JOB_TYPES = ['full-time', 'part-time', 'internship', 'contract'];
@@ -65,5 +66,14 @@ export const publicJob = (j) => ({
   openings: j.openings,
   description: j.description,
   status: j.status,
+  // false while the job waits for admin approval.
+  approved: j.approved !== false,
   createdAt: j.createdAt,
 });
+
+// With "approve new companies' first job" switched on, a company's job waits for an admin
+// until the company has at least one approved job.
+export async function needsApproval(companyId) {
+  if (!requireJobApproval()) return false;
+  return !(await Job.exists({ company: companyId, approved: { $ne: false } }));
+}

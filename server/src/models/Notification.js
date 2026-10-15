@@ -3,7 +3,7 @@ import mongoose from 'mongoose';
 const notificationSchema = new mongoose.Schema(
   {
     user: { type: mongoose.Schema.Types.ObjectId, ref: 'User', required: true },
-    type: { type: String, required: true }, // shortlisted | message | interview | hired | verified
+    type: { type: String, required: true }, // shortlisted | message | interview | hired | verified | announcement | support
     title: { type: String, required: true },
     body: String,
     link: String, // client route to open, e.g. /messages?with=<id>

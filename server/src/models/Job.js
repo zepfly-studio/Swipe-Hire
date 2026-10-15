@@ -18,6 +18,10 @@ const jobSchema = new mongoose.Schema(
     description: { type: String, maxlength: 3000 },
     status: { type: String, enum: ['open', 'paused', 'closed'], default: 'open' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    // false = waiting for admin approval (only when the site requires it); unset = approved.
+    approved: Boolean,
+    // Marked by an admin as suspicious (spam / fake); shown in the admin panel.
+    flagged: { reason: String, at: Date },
   },
   { timestamps: true },
 );

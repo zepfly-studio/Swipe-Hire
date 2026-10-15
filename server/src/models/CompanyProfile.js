@@ -1,5 +1,5 @@
 import mongoose from 'mongoose';
-import { config } from '../config/index.js';
+import { getFreeSwipes } from '../utils/settings.js';
 
 const companyProfileSchema = new mongoose.Schema(
   {
@@ -38,7 +38,7 @@ const companyProfileSchema = new mongoose.Schema(
     // sends/fails count across codes for a day (windowStart), so codes can't be brute-forced by re-sending.
     emailOtp: { type: { hash: String, expires: Date, tries: Number, sends: Number, fails: Number, windowStart: Date }, select: false },
 
-    swipesLeft: { type: Number, default: () => config.freeSwipes, min: 0 },
+    swipesLeft: { type: Number, default: () => getFreeSwipes(), min: 0 },
     swipesPurchased: { type: Number, default: 0 },
     // Order ids already credited; makes crediting idempotent in one atomic write.
     creditedOrders: { type: [String], default: [], select: false },

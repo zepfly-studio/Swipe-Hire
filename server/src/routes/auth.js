@@ -10,8 +10,9 @@ import { TeamInvite } from '../models/TeamInvite.js';
 import { hashToken } from './team.js';
 import { HttpError } from '../utils/HttpError.js';
 import { signUrl, withSignedFiles } from '../utils/signedUrl.js';
-import { isAdminEmail } from './admin.js';
-import { sendMail, mailEnabled } from '../utils/mailer.js';
+import { adminRoleOf, permsOf } from '../utils/adminAccess.js';
+import { showEmailCodeOn } from '../utils/settings.js';
+import { sendMail } from '../utils/mailer.js';
 import { config } from '../config/index.js';
 
 const router = Router();
@@ -44,7 +45,8 @@ const publicUser = (u) => ({
   email: u.email,
   role: u.role,
   emailVerified: u.emailVerified !== false,
-  isAdmin: isAdminEmail(u.email) && u.emailVerified !== false,
+  isAdmin: Boolean(adminRoleOf(u)),
+  ...(adminRoleOf(u) && { adminRole: adminRoleOf(u), adminPerms: permsOf(adminRoleOf(u)) }),
   avatarUrl: signUrl(u.avatarUrl),
   phone: u.phone,
   ...(u.role === 'company' && { companyId: companyIdOf(u), isOwner: !u.companyId }),
@@ -137,7 +139,7 @@ const hashCode = (code) => crypto.createHash('sha256').update(String(code)).dige
 // while SHOW_EMAIL_CODE=true (testing before the site has a domain, when the email service
 // can't reach everyone). That second case lets anyone sign up with any address, so turn it
 // off before launch.
-const showCodeOnScreen = () => (!mailEnabled && !config.isProd) || process.env.SHOW_EMAIL_CODE === 'true';
+const showCodeOnScreen = showEmailCodeOn;
 
 // Sends a code, or reuses the one sent less than a minute ago (e.g. the page was refreshed).
 router.post('/email/send', auth, async (req, res) => {

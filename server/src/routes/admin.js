@@ -1,6 +1,6 @@
 import { Router } from 'express';
 import mongoose from 'mongoose';
-import { auth } from '../middleware/auth.js';
+import { adminOnly, perm } from '../middleware/admin.js';
 import { User } from '../models/User.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
 import { CompanyProfile } from '../models/CompanyProfile.js';
@@ -16,17 +16,24 @@ import { HttpError } from '../utils/HttpError.js';
 import { notifyCompany } from '../utils/notify.js';
 import { withSignedFiles } from '../utils/signedUrl.js';
 import { deleteAccount } from '../utils/deleteAccount.js';
+import { adminRoleOf, isAdminEmail, logAdmin } from '../utils/adminAccess.js';
+import { Report } from '../models/Report.js';
+import { Ticket } from '../models/Ticket.js';
+import moreRoutes from './adminMore.js';
 
 const router = Router();
 
-export const isAdminEmail = (email) => config.adminEmails.includes(String(email).toLowerCase());
+export { isAdminEmail };
 
-router.use(auth, async (req, _res, next) => {
-  // A verified email is required, so nobody can claim an admin address by signing up with it.
-  const user = await User.findById(req.user.id).select('email emailVerified').lean();
-  if (!user || !isAdminEmail(user.email) || user.emailVerified === false) throw new HttpError(403, 'Admins only');
-  next();
-});
+// Every admin route needs an admin login (see middleware/admin.js); each route adds its permission.
+router.use(adminOnly);
+
+// Admin logins are not customers; keep them out of lists and counts.
+const notAdmins = async () => {
+  const staff = await User.find({ adminRole: { $exists: true } }).distinct('email');
+  const emails = [...config.adminEmails, ...staff];
+  return emails.length ? { email: { $nin: emails } } : {};
+};
 
 const PAGE_SIZE = 25;
 const page = (q) => Math.max(1, Math.min(1000, Number.parseInt(q.page, 10) || 1));
@@ -39,9 +46,8 @@ const contains = (q) => new RegExp(String(q).trim().slice(0, 80).replace(/[.*+?^
 const daysAgo = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
 // ---------- overview ----------
-router.get('/stats', async (_req, res) => {
-  // Admin logins are not customers; leave them out of every count.
-  const people = config.adminEmails.length ? { email: { $nin: config.adminEmails } } : {};
+router.get('/stats', perm('view'), async (_req, res) => {
+  const people = await notAdmins();
   const [
     candidates, companies, recruiters, liveCandidates, hiddenCandidates, completedCompanies, verifiedCompanies, pendingVerifications,
     suspended, unverifiedEmails, newUsers7d, jobsByStatus, swipes, shortlists, hires, messages, interviews, tasks, payments, signups,
@@ -79,6 +85,12 @@ router.get('/stats', async (_req, res) => {
     candidates: signups.find((s) => s._id.day === day && s._id.role === 'candidate')?.n || 0,
     companies: signups.find((s) => s._id.day === day && s._id.role === 'company')?.n || 0,
   }));
+  const [openReports, openTickets, pendingReview, pendingJobs] = await Promise.all([
+    Report.countDocuments({ status: 'open' }),
+    Ticket.countDocuments({ status: 'open' }),
+    CandidateProfile.countDocuments({ step: 3, 'review.status': { $exists: false } }),
+    Job.countDocuments({ approved: false }),
+  ]);
   const recent = await User.find(people).sort({ createdAt: -1 }).limit(8).select('name email role companyId createdAt suspended').lean();
   res.json({
     users: { candidates, companies, recruiters, suspended, unverifiedEmails, newLast7Days: newUsers7d },
@@ -89,21 +101,21 @@ router.get('/stats', async (_req, res) => {
     // Amounts are stored in rupees (see routes/payment.js).
     revenue: { paid: pay('razorpay'), demo: pay('demo') },
     signupsByDay,
+    queues: { reports: openReports, tickets: openTickets, review: pendingReview, jobs: pendingJobs, verifications: pendingVerifications },
     recent: recent.map((u) => ({ id: String(u._id), name: u.name, email: u.email, role: u.companyId ? 'recruiter' : u.role, createdAt: u.createdAt, suspended: !!u.suspended })),
   });
 });
 
 // ---------- users ----------
 // role: candidate | company (owners) | recruiter. status: all | live | incomplete | hidden | suspended | unverified | verified-company | pending-verification
-router.get('/users', async (req, res) => {
+router.get('/users', perm('view'), async (req, res) => {
   const role = ['candidate', 'company', 'recruiter'].includes(req.query.role) ? req.query.role : 'candidate';
   const status = String(req.query.status || 'all');
   const q = String(req.query.q || '').trim();
   const p = page(req.query);
 
   const where = role === 'candidate' ? { role: 'candidate' } : role === 'company' ? { role: 'company', companyId: { $exists: false } } : { role: 'company', companyId: { $exists: true } };
-  // Admin logins are not customers; keep them out of the lists.
-  if (config.adminEmails.length) where.email = { $nin: config.adminEmails };
+  Object.assign(where, await notAdmins());
   if (status === 'suspended') where.suspended = true;
   if (status === 'unverified') where.emailVerified = false;
 
@@ -183,12 +195,12 @@ router.get('/users', async (req, res) => {
 });
 
 // Everything about one account.
-router.get('/users/:id', async (req, res) => {
+router.get('/users/:id', perm('view'), async (req, res) => {
   const id = objectId(req.params.id, 'user');
-  const user = await User.findById(id).select('name email role companyId emailVerified suspended avatarUrl phone createdAt updatedAt').lean();
+  const user = await User.findById(id).select('name email role companyId emailVerified suspended adminRole avatarUrl phone createdAt updatedAt').lean();
   if (!user) throw new HttpError(404, 'User not found');
   const out = {
-    user: { ...withSignedFiles(user), id: String(user._id), role: user.companyId ? 'recruiter' : user.role, isAdmin: isAdminEmail(user.email), emailVerified: user.emailVerified !== false, suspended: !!user.suspended },
+    user: { ...withSignedFiles(user), id: String(user._id), role: user.companyId ? 'recruiter' : user.role, isAdmin: Boolean(adminRoleOf(user)), emailVerified: user.emailVerified !== false, suspended: !!user.suspended },
   };
 
   if (user.role === 'candidate') {
@@ -241,38 +253,56 @@ router.get('/users/:id', async (req, res) => {
 });
 
 // Suspend / reinstate, or mark the email as verified.
+export async function setSuspended(req, id, suspended) {
+  const user = await User.findById(id).select('email role companyId emailVerified adminRole').lean();
+  if (!user) throw new HttpError(404, 'User not found');
+  if (adminRoleOf(user)) throw new HttpError(400, 'Admin accounts cannot be suspended');
+  const ids = user.role === 'company' && !user.companyId ? [id, ...(await User.find({ companyId: id }).distinct('_id'))] : [id];
+  await User.updateMany({ _id: { $in: ids } }, { $set: { suspended }, ...(suspended && { $inc: { tokenVersion: 1 } }) });
+  if (user.role === 'candidate') await CandidateProfile.updateOne({ user: id }, { suspended });
+  await logAdmin(req, suspended ? 'user.suspend' : 'user.reinstate', { targetType: 'user', targetId: id, summary: user.email });
+  return ids.length;
+}
+
 router.patch('/users/:id', async (req, res) => {
   const id = objectId(req.params.id, 'user');
   const user = await User.findById(id).select('email role companyId suspended').lean();
   if (!user) throw new HttpError(404, 'User not found');
   const { suspended, emailVerified } = req.body ?? {};
-  const set = {};
-  if (typeof emailVerified === 'boolean') set.emailVerified = emailVerified;
   if (typeof suspended === 'boolean') {
-    if (isAdminEmail(user.email)) throw new HttpError(400, 'Admin accounts cannot be suspended');
-    set.suspended = suspended;
+    perm('users.manage')(req, res, () => {});
+    return res.json({ ok: true, affected: await setSuspended(req, id, suspended) });
+  }
+  const set = {};
+  if (typeof emailVerified === 'boolean') {
+    perm('users.edit')(req, res, () => {});
+    set.emailVerified = emailVerified;
   }
   if (!Object.keys(set).length) throw new HttpError(400, 'Nothing to change');
-
-  // Suspending a company owner suspends the whole team. Suspending logs everyone out.
-  const ids = typeof suspended === 'boolean' && user.role === 'company' && !user.companyId ? [id, ...(await User.find({ companyId: id }).distinct('_id'))] : [id];
-  await User.updateMany({ _id: { $in: ids } }, { $set: set, ...(suspended === true && { $inc: { tokenVersion: 1 } }) });
-  if (typeof suspended === 'boolean' && user.role === 'candidate') await CandidateProfile.updateOne({ user: id }, { suspended });
-  res.json({ ok: true, affected: ids.length });
+  await User.updateOne({ _id: id }, { $set: set });
+  await logAdmin(req, 'user.email-verified', { targetType: 'user', targetId: id, summary: user.email });
+  res.json({ ok: true, affected: 1 });
 });
 
-router.delete('/users/:id', async (req, res) => {
-  const id = objectId(req.params.id, 'user');
+export async function adminDelete(req, id) {
   if (String(id) === req.user.id) throw new HttpError(400, 'You cannot delete your own account here');
-  const user = await User.findById(id).select('email').lean();
+  const user = await User.findById(id).select('email emailVerified adminRole').lean();
   if (!user) throw new HttpError(404, 'User not found');
-  if (isAdminEmail(user.email)) throw new HttpError(400, 'Admin accounts cannot be deleted');
-  res.json({ ok: true, ...(await deleteAccount(id)) });
+  if (adminRoleOf(user)) throw new HttpError(400, 'Admin accounts cannot be deleted');
+  const out = await deleteAccount(id);
+  await logAdmin(req, 'user.delete', { targetType: 'user', targetId: id, summary: `${user.email} (${out.role})` });
+  return out;
+}
+
+router.delete('/users/:id', perm('users.delete'), async (req, res) => {
+  res.json({ ok: true, ...(await adminDelete(req, objectId(req.params.id, 'user'))) });
 });
 
 // Company controls: add or remove swipe credits, set the verification badge.
 router.patch('/companies/:id', async (req, res) => {
   const id = objectId(req.params.id, 'company');
+  if (req.body?.swipesDelta !== undefined) perm('credits')(req, res, () => {});
+  if (req.body?.verification !== undefined) perm('verify')(req, res, () => {});
   const company = await CompanyProfile.findOne({ user: id }).select('swipesLeft verification companyName').lean();
   if (!company) throw new HttpError(404, 'Company not found');
   const { swipesDelta, verification } = req.body ?? {};
@@ -288,6 +318,10 @@ router.patch('/companies/:id', async (req, res) => {
   }
   if (!Object.keys(update).length) throw new HttpError(400, 'Nothing to change');
   const updated = await CompanyProfile.findOneAndUpdate({ user: id }, { $set: update }, { new: true }).lean();
+  if (update.swipesLeft !== undefined) {
+    await logAdmin(req, 'credits.change', { targetType: 'company', targetId: id, summary: `${company.companyName}: ${swipesDelta > 0 ? '+' : ''}${swipesDelta} swipes (now ${updated.swipesLeft})` });
+  }
+  if (verification !== undefined) await logAdmin(req, 'company.verification', { targetType: 'company', targetId: id, summary: `${company.companyName}: ${verification}` });
   if (verification === 'verified' && company.verification?.status !== 'verified') {
     notifyCompany(id, {
       type: 'verified',
@@ -301,10 +335,12 @@ router.patch('/companies/:id', async (req, res) => {
 });
 
 // ---------- jobs (every company) ----------
-router.get('/jobs', async (req, res) => {
+router.get('/jobs', perm('view'), async (req, res) => {
   const p = page(req.query);
   const where = {};
   if (['open', 'paused', 'closed'].includes(req.query.status)) where.status = req.query.status;
+  if (req.query.status === 'pending') where.approved = false;
+  if (req.query.status === 'flagged') where['flagged.at'] = { $exists: true };
   const q = String(req.query.q || '').trim();
   if (q) {
     const rx = contains(q);
@@ -337,36 +373,62 @@ router.get('/jobs', async (req, res) => {
       maxExperience: j.maxExperience,
       openings: j.openings,
       requiredSkills: j.requiredSkills,
+      description: j.description,
+      approved: j.approved !== false,
+      flagged: j.flagged?.at ? { reason: j.flagged.reason, at: j.flagged.at } : null,
       createdAt: j.createdAt,
       stats: { seen: st[String(j._id)]?.seen || 0, shortlisted: st[String(j._id)]?.shortlisted || 0, hired: st[String(j._id)]?.hired || 0 },
     })),
   });
 });
 
-router.patch('/jobs/:id', async (req, res) => {
+// Change status, approve a waiting job, or flag / unflag it.
+router.patch('/jobs/:id', perm('jobs'), async (req, res) => {
   const id = objectId(req.params.id, 'job');
-  const status = req.body?.status;
-  if (!['open', 'paused', 'closed'].includes(status)) throw new HttpError(400, 'Invalid status');
-  const job = await Job.findByIdAndUpdate(id, { status }, { new: true }).lean();
-  if (!job) throw new HttpError(404, 'Job not found');
-  res.json({ ok: true, status: job.status });
+  const { status, approved, flagged, flagReason } = req.body ?? {};
+  const set = {};
+  const unset = {};
+  if (status !== undefined) {
+    if (!['open', 'paused', 'closed'].includes(status)) throw new HttpError(400, 'Invalid status');
+    set.status = status;
+  }
+  if (approved === true) unset.approved = 1;
+  if (approved === false) set.approved = false;
+  if (flagged === true) set.flagged = { reason: String(flagReason || 'Flagged by admin').slice(0, 200), at: new Date() };
+  if (flagged === false) unset.flagged = 1;
+  if (!Object.keys(set).length && !Object.keys(unset).length) throw new HttpError(400, 'Nothing to change');
+  const before = await Job.findById(id).lean();
+  if (!before) throw new HttpError(404, 'Job not found');
+  const update = {};
+  if (Object.keys(set).length) update.$set = set;
+  if (Object.keys(unset).length) update.$unset = unset;
+  const job = await Job.findByIdAndUpdate(id, update, { new: true }).lean();
+  if (approved === true && before.approved === false) {
+    notifyCompany(job.company, { type: 'verified', title: `Your job "${job.title}" is approved`, body: 'You can start swiping candidates for it now.', link: '/company/swipe', email: true });
+  }
+  const what = [status && `status ${status}`, approved === true && 'approved', approved === false && 'unapproved', flagged === true && 'flagged', flagged === false && 'unflagged']
+    .filter(Boolean)
+    .join(', ');
+  await logAdmin(req, 'job.update', { targetType: 'job', targetId: id, summary: `${job.title}: ${what}` });
+  res.json({ ok: true, status: job.status, approved: job.approved !== false, flagged: job.flagged?.at ? job.flagged : null });
 });
 
-router.delete('/jobs/:id', async (req, res) => {
+router.delete('/jobs/:id', perm('jobs'), async (req, res) => {
   const id = objectId(req.params.id, 'job');
   const job = await Job.findById(id).lean();
   if (!job) throw new HttpError(404, 'Job not found');
   // Shortlists made for this job stay in the company's pipeline; only the job itself goes.
   await Job.deleteOne({ _id: id });
+  await logAdmin(req, 'job.delete', { targetType: 'job', targetId: id, summary: job.title });
   res.json({ ok: true });
 });
 
 // ---------- payments ----------
-router.get('/payments', async (req, res) => {
+router.get('/payments', perm('payments'), async (req, res) => {
   const p = page(req.query);
   const where = {};
-  if (['paid', 'created'].includes(req.query.status)) where.status = req.query.status;
-  if (['razorpay', 'demo'].includes(req.query.mode)) where.mode = req.query.mode;
+  if (['paid', 'created', 'refunded'].includes(req.query.status)) where.status = req.query.status;
+  if (['razorpay', 'demo', 'manual'].includes(req.query.mode)) where.mode = req.query.mode;
   const [total, payments] = await Promise.all([Payment.countDocuments(where), Payment.find(where).sort({ createdAt: -1 }).skip((p - 1) * PAGE_SIZE).limit(PAGE_SIZE).lean()]);
   const companies = await CompanyProfile.find({ user: { $in: payments.map((x) => x.company) } }).select('user companyName').lean();
   const name = Object.fromEntries(companies.map((c) => [String(c.user), c.companyName]));
@@ -384,13 +446,17 @@ router.get('/payments', async (req, res) => {
       status: x.status,
       amount: x.amount,
       swipes: x.swipes,
+      couponCode: x.couponCode,
+      listPrice: x.listPrice,
+      note: x.note,
+      refundedAt: x.refundedAt,
       createdAt: x.createdAt,
     })),
   });
 });
 
 // ---------- company verification requests (GSTIN) ----------
-router.get('/verifications', async (_req, res) => {
+router.get('/verifications', perm('view'), async (_req, res) => {
   const pending = await CompanyProfile.find({ 'verification.status': 'pending' })
     .populate('user', 'name email')
     .sort({ updatedAt: 1 })
@@ -408,7 +474,7 @@ router.get('/verifications', async (_req, res) => {
   });
 });
 
-router.post('/verifications/:companyId', async (req, res) => {
+router.post('/verifications/:companyId', perm('verify'), async (req, res) => {
   const { companyId } = req.params;
   if (!mongoose.isValidObjectId(companyId)) throw new HttpError(400, 'Invalid company');
   const approve = req.body?.approve === true;
@@ -421,6 +487,7 @@ router.post('/verifications/:companyId', async (req, res) => {
     },
   );
   if (!updated) throw new HttpError(404, 'No pending request for this company');
+  await logAdmin(req, approve ? 'verification.approve' : 'verification.reject', { targetType: 'company', targetId: companyId, summary: `${updated.companyName} (${updated.gstin})` });
   notifyCompany(companyId, {
     type: 'verified',
     title: approve ? 'Your company is verified ✓' : 'Verification was not approved',
@@ -434,3 +501,29 @@ router.post('/verifications/:companyId', async (req, res) => {
 });
 
 export default router;
+
+// Bulk actions on selected accounts: suspend | reinstate | verify-email | delete.
+router.post('/users/bulk', async (req, res) => {
+  const action = req.body?.action;
+  const ids = (Array.isArray(req.body?.ids) ? req.body.ids : []).filter((x) => mongoose.isValidObjectId(x)).slice(0, 200);
+  if (!ids.length) throw new HttpError(400, 'Select at least one account');
+  const need = { suspend: 'users.manage', reinstate: 'users.manage', 'verify-email': 'users.edit', delete: 'users.delete' }[action];
+  if (!need) throw new HttpError(400, 'Invalid action');
+  perm(need)(req, res, () => {});
+  let done = 0;
+  const failed = [];
+  for (const id of ids) {
+    try {
+      if (action === 'suspend' || action === 'reinstate') await setSuspended(req, new mongoose.Types.ObjectId(id), action === 'suspend');
+      else if (action === 'delete') await adminDelete(req, new mongoose.Types.ObjectId(id));
+      else await User.updateOne({ _id: id }, { emailVerified: true });
+      done += 1;
+    } catch (err) {
+      failed.push({ id, message: err.message });
+    }
+  }
+  if (action === 'verify-email') await logAdmin(req, 'user.email-verified', { targetType: 'users', summary: `${done} accounts` });
+  res.json({ ok: true, done, failed });
+});
+
+router.use(moreRoutes);
