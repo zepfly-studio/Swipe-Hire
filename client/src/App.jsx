@@ -18,6 +18,7 @@ const VerifyPage = lazy(() => import('./pages/company/VerifyPage'));
 const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const InterviewsPage = lazy(() => import('./pages/InterviewsPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
+const AboutPage = lazy(() => import('./pages/AboutPage'));
 const AdminPage = lazy(() => import('./pages/AdminPage'));
 const JobsPage = lazy(() => import('./pages/company/JobsPage'));
 const TeamPage = lazy(() => import('./pages/company/TeamPage'));
@@ -97,12 +98,13 @@ export default function App() {
   useEffect(() => applyRouteMeta(location.pathname), [location.pathname]);
   // Public pages (home, login) work without the API, so visitors and search engines still
   // see them if it's down; only the signed-in app shows the "can't reach" screen.
-  if (offline && !['/', '/auth'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
+  if (offline && !['/', '/auth', '/about'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<GuestOnly><Page><AuthPage /></Page></GuestOnly>} />
+        <Route path="/about" element={<Page><AboutPage /></Page>} />
         <Route path="/verify-email" element={<Unverified><Page><VerifyEmailPage /></Page></Unverified>} />
 
         <Route path="/candidate/onboarding" element={<Guard role="candidate"><Page><CandidateOnboarding /></Page></Guard>} />

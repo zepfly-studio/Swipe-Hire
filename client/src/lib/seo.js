@@ -12,6 +12,11 @@ const HOME = {
 
 const PUBLIC = {
   '/': HOME,
+  '/about': {
+    title: 'About Glide Recruit – How Our Hiring Platform Works',
+    description:
+      'Glide Recruit connects Indian companies and job seekers through resumes and 15-second intro videos. Learn how it works, its features, privacy and pricing.',
+  },
   '/auth': {
     title: 'Sign Up or Log In – Glide Recruit',
     description:

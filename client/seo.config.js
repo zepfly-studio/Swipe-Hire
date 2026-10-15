@@ -4,6 +4,7 @@
 // Public pages that search engines should index. Everything behind login is excluded.
 export const PUBLIC_PAGES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
+  { path: '/about', changefreq: 'monthly', priority: '0.7' },
   { path: '/auth', changefreq: 'monthly', priority: '0.6' },
 ];
 
@@ -35,9 +36,9 @@ ${PUBLIC_PAGES.map(
     // A plain summary for AI assistants and AI search (https://llmstxt.org).
     'llms.txt': {
       type: 'text/plain',
-      body: `# Swipe Hire
+      body: `# Glide Recruit
 
-> Swipe Hire is a hiring platform in India where companies swipe through candidate resumes and 15-second intro videos, Tinder-style, to find the right people fast. Job seekers create one profile and get discovered for the best job opportunities without sending hundreds of applications.
+> Glide Recruit is a hiring platform in India where companies swipe through candidate resumes and 15-second intro videos to find the right people fast. Job seekers create one profile and get discovered for the best job opportunities without sending hundreds of applications.
 
 ## For companies
 - Swipe right to shortlist a candidate and unlock their phone and email; swipe left to pass.
@@ -55,6 +56,7 @@ ${PUBLIC_PAGES.map(
 
 ## Links
 - Home: ${siteUrl}/
+- About: ${siteUrl}/about
 - Sign up / log in: ${siteUrl}/auth
 `,
     },

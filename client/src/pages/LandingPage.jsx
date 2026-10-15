@@ -227,6 +227,7 @@ export default function LandingPage() {
               ['#for-candidates', 'For job seekers'],
               ['#pricing', 'Pricing'],
               ['#faq', 'FAQ'],
+              ['/about', 'About'],
             ].map(([href, label]) => (
               <a key={href} href={href} className="rounded-xl px-3 py-2 hover:bg-white/5 hover:text-white">
                 {label}
@@ -403,6 +404,7 @@ export default function LandingPage() {
             <a href="#how-it-works" className="hover:text-white">How it works</a>
             <a href="#pricing" className="hover:text-white">Pricing</a>
             <a href="#faq" className="hover:text-white">FAQ</a>
+            <Link to="/about" className="hover:text-white">About</Link>
             <Link to="/auth?role=company" className="hover:text-white">For companies</Link>
             <Link to="/auth" className="hover:text-white">For job seekers</Link>
             <Link to="/auth?mode=login" className="hover:text-white">Log in</Link>
