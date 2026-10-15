@@ -53,7 +53,7 @@ export default function PlanCards({ onPurchased }) {
           description: `${plan.name} plan · ${plan.swipes} swipes`,
           prefill: { name: user?.name, email: user?.email },
           // Razorpay checkout in the site's accent colour.
-          theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim() || '#0d6b50' },
+          theme: { color: getComputedStyle(document.documentElement).getPropertyValue('--color-brand-500').trim() || '#0f4d42' },
           handler: (resp) =>
             verify({
               orderId: resp.razorpay_order_id,

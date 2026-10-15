@@ -168,7 +168,7 @@ export function StagePill({ stage, candidateView = false }) {
   return <span className={cx('rounded-full px-2.5 py-1 text-xs font-bold', s.cls)}>{label}</span>;
 }
 
-const BURST_COLORS = ['var(--color-brand-500)', '#2563eb', '#34d399', '#93c5fd', '#a7f3d0'];
+const BURST_COLORS = ['var(--color-brand-500)', '#2563eb', '#4d7a70', '#93c5fd', '#a8c2bb'];
 
 // Confetti-style particle burst, centred on its parent.
 export function Burst({ count = 22, distance = 140 }) {

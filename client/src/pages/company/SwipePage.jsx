@@ -61,7 +61,7 @@ function ShortlistFlash({ flash }) {
           transition={{ type: 'spring', stiffness: 380, damping: 22 }}
           className="pointer-events-none fixed inset-x-0 top-1/3 z-50 flex justify-center"
         >
-          <div className="relative rounded-3xl border border-emerald-400/40 bg-ink-900/95 px-6 py-4 text-center shadow-2xl shadow-emerald-500/20 backdrop-blur-xl">
+          <div className="relative rounded-3xl border border-emerald-400/40 bg-ink-900/95 px-6 py-4 text-center shadow-2xl shadow-brand-500/20 backdrop-blur-xl">
             <Burst count={26} distance={150} />
             <p className="flex items-center justify-center gap-2 text-lg font-extrabold text-emerald-400">
               <BadgeCheck size={22} />

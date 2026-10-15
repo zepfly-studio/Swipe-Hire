@@ -14,17 +14,18 @@
   --color-ink-600: #cfdcd5;
   --color-white: #13202b;
 
-  --color-brand-400: #0b5c45;
-  --color-brand-500: #0d6b50;
-  --color-brand-600: #0a4d3a;
-  --color-violet-brand: #0a5a43;
+  /* Brand green = the dark green card in the logo. */
+  --color-brand-400: #0f4d42;
+  --color-brand-500: #0f4d42;
+  --color-brand-600: #0a3a31;
+  --color-violet-brand: #0c4238;
   /* Errors and destructive actions, so they never take the brand colour. */
   --color-danger: #dc2626;
 
   /* Status colours dark enough to read on white; sky and violet become the blue accent. */
-  --color-emerald-200: #047857;
-  --color-emerald-300: #047857;
-  --color-emerald-400: #059669;
+  --color-emerald-200: #0f4d42;
+  --color-emerald-300: #0f4d42;
+  --color-emerald-400: #0f4d42;
   --color-amber-100: #92400e;
   --color-amber-200: #b45309;
   --color-amber-300: #b45309;
@@ -64,7 +65,7 @@
 
 @layer components {
   .text-gradient {
-    @apply bg-linear-to-r from-brand-600 from-45% to-sky-300 bg-clip-text text-transparent;
+    @apply bg-linear-to-r from-brand-500 from-45% to-sky-300 bg-clip-text text-transparent;
   }
   .glass {
     @apply border border-white/[0.08] bg-ink-900/95 shadow-sm shadow-black/[0.03] backdrop-blur-xl;

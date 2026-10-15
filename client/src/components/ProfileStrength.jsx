@@ -25,7 +25,7 @@ export default function ProfileStrength({ profile }) {
   const score = items.reduce((sum, i) => sum + (i.done ? i.points : 0), 0);
   const missing = items.filter((i) => !i.done).sort((a, b) => b.points - a.points);
   const level = score >= 90 ? 'All-star' : score >= 70 ? 'Strong' : score >= 45 ? 'Good start' : 'Needs work';
-  const color = score >= 90 ? '#059669' : score >= 70 ? '#2563eb' : score >= 45 ? '#d97706' : '#dc2626';
+  const color = score >= 90 ? '#0f4d42' : score >= 70 ? '#2563eb' : score >= 45 ? '#d97706' : '#dc2626';
   const R = 34;
   const C = 2 * Math.PI * R;
 
