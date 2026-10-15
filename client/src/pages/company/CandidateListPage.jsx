@@ -439,7 +439,7 @@ export default function CandidateListPage({ kind }) {
                     <Link
                       to={`/messages?with=${c.id}`}
                       onClick={(e) => e.stopPropagation()}
-                      className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-brand-500 transition hover:bg-brand-500 hover:text-white"
+                      className="-mr-1 -mt-1 grid h-9 w-9 shrink-0 place-items-center rounded-xl bg-white/[0.06] text-brand-500 transition hover:bg-brand-500 hover:text-[#fff]"
                       aria-label={`Message ${c.name}`}
                       title="Message"
                     >

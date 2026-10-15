@@ -96,7 +96,7 @@ export function ChipSelect({ options, value, onChange, layoutId }) {
             onClick={() => onChange(opt.value)}
             className={cx(
               'relative rounded-full px-4 py-2 text-sm font-medium transition-colors',
-              active ? 'text-white' : 'bg-white/[0.05] text-white/60 hover:text-white',
+              active ? 'text-[#fff]' : 'bg-white/[0.05] text-white/60 hover:text-white',
             )}
           >
             {active && (
@@ -158,7 +158,7 @@ export const STAGE_STYLES = {
   task: { label: 'Task sent', cls: 'bg-violet-400/15 text-violet-300' },
   interview: { label: 'Interview', cls: 'bg-amber-300/15 text-amber-200' },
   hired: { label: 'Hired', cls: 'bg-emerald-400/15 text-emerald-300' },
-  rejected: { label: 'Rejected', cls: 'bg-brand-500/15 text-brand-400' },
+  rejected: { label: 'Rejected', cls: 'bg-red-500/10 text-danger' },
   closed: { label: 'Closed', cls: 'bg-white/5 text-white/40' },
 };
 

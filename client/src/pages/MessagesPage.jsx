@@ -176,7 +176,7 @@ function Thread({ otherId, isCompany, onBack, onSent }) {
                     )}
                   >
                     {m.text}
-                    <span className={cx('mt-0.5 flex items-center justify-end gap-1 text-[10px]', m.mine ? 'text-white/70' : 'text-white/40')}>
+                    <span className={cx('mt-0.5 flex items-center justify-end gap-1 text-[10px]', m.mine ? 'text-[#fff]/75' : 'text-white/40')}>
                       {timeOf(m.at)}
                       {m.mine && (m.read ? <CheckCheck size={12} /> : <Check size={12} />)}
                     </span>

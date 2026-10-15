@@ -551,7 +551,7 @@ export default function SwipePage() {
             >
               <RotateCcw size={19} strokeWidth={2.5} />
             </ActionButton>
-            <ActionButton label="Pass" onClick={() => swipe(-1)} disabled={!top} className="border-brand-500/40 text-brand-500 hover:bg-brand-500 hover:text-white">
+            <ActionButton label="Pass" onClick={() => swipe(-1)} disabled={!top} className="border-brand-500/40 text-brand-500 hover:bg-brand-500 hover:text-[#fff]">
               <X size={30} strokeWidth={3} />
             </ActionButton>
             <ActionButton

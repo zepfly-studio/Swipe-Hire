@@ -110,7 +110,7 @@ export default function AuthPage() {
                     setMode(m);
                     setErrors({});
                   }}
-                  className={cx('relative rounded-xl py-2.5 text-sm font-semibold transition-colors', mode === m ? 'text-white' : 'text-white/50')}
+                  className={cx('relative rounded-xl py-2.5 text-sm font-semibold transition-colors', mode === m ? 'text-[#fff]' : 'text-white/50')}
                 >
                   {mode === m && (
                     <motion.span
