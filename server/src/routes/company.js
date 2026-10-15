@@ -378,6 +378,33 @@ router.patch('/pipeline/:swipeId', async (req, res) => {
   res.json({ ok: true, ...update });
 });
 
+// Removes a candidate from the shortlist for that job. The swipe becomes a pass, so they
+// don't come back into this job's feed; the credit is not refunded (their contact was
+// already shown). If no other job still has them shortlisted, open interviews and tasks
+// with them are cancelled and chat closes (chat needs a shortlist).
+router.delete('/pipeline/:swipeId', async (req, res) => {
+  assertId(req.params.swipeId, 'pipeline entry');
+  const cid = req.user.companyId;
+  const swipe = await Swipe.findOneAndUpdate(
+    { _id: req.params.swipeId, company: cid, action: 'right' },
+    { $set: { action: 'left', stage: 'shortlisted', notes: '' } },
+  );
+  if (!swipe) throw new HttpError(404, 'This candidate is not in your pipeline');
+
+  const pair = { company: cid, candidate: swipe.candidate };
+  const stillShortlisted = await Swipe.exists({ ...pair, action: 'right' });
+  let cancelled = { interviews: 0, tasks: 0 };
+  if (!stillShortlisted) {
+    const [iv, tk] = await Promise.all([
+      Interview.updateMany({ ...pair, status: { $in: ['proposed', 'confirmed'] } }, { status: 'cancelled', cancelledBy: req.user.id }),
+      Task.updateMany({ ...pair, status: 'assigned' }, { status: 'cancelled' }),
+      Notification.deleteMany({ user: swipe.candidate, type: 'shortlisted', from: swipe.swipedBy }),
+    ]);
+    cancelled = { interviews: iv.modifiedCount, tasks: tk.modifiedCount };
+  }
+  res.json({ ok: true, stillShortlisted: Boolean(stillShortlisted), cancelled });
+});
+
 // ---- Saved searches (swipe-screen filters + new-candidate alerts) ----
 router.get('/searches', async (req, res) => {
   const searches = await SavedSearch.find({ company: req.user.companyId }).sort({ createdAt: -1 }).lean();

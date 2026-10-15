@@ -1,7 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BadgeCheck, Briefcase, CalendarPlus, Check, ClipboardList, Copy, FileText, Heart, Layers, Mail, MapPin, MessageCircle, MessagesSquare, Phone, Users, X } from 'lucide-react';
+import { BadgeCheck, Briefcase, CalendarPlus, Check, ClipboardList, Copy, FileText, Heart, Layers, Mail, MapPin, MessageCircle, MessagesSquare, Phone, UserMinus, Users, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CompanyShell from '../../components/CompanyShell';
 import Modal from '../../components/Modal';
@@ -65,7 +65,7 @@ const STAGE_OPTIONS = ['shortlisted', 'contacted', 'task', 'interview', 'hired',
 }));
 
 // Stage, private notes and next actions for a shortlisted candidate.
-function PipelineControls({ c, onStage, onNotes, onSchedule, onTask }) {
+function PipelineControls({ c, onStage, onNotes, onSchedule, onTask, onUnshortlist }) {
   const [notes, setNotes] = useState(c.notes ?? '');
   const dirty = notes !== (c.notes ?? '');
   return (
@@ -99,6 +99,12 @@ function PipelineControls({ c, onStage, onNotes, onSchedule, onTask }) {
           Interview
         </Button>
       </div>
+      {onUnshortlist && (
+        <button onClick={() => onUnshortlist(c)} className="flex w-full items-center justify-center gap-2 rounded-xl py-2 text-sm font-semibold text-danger hover:bg-red-500/10">
+          <UserMinus size={16} />
+          Remove from shortlist
+        </button>
+      )}
     </div>
   );
 }
@@ -126,7 +132,7 @@ function CandidateTasks({ candidateId, version }) {
   );
 }
 
-function CandidateModal({ c, onClose, onShortlist, onRemove, onResume, busy, onStage, onNotes, onSchedule, onTask, taskVersion }) {
+function CandidateModal({ c, onClose, onShortlist, onRemove, onResume, busy, onStage, onNotes, onSchedule, onTask, onUnshortlist, taskVersion }) {
   return (
     <Modal open={Boolean(c)} onClose={onClose} className="sm:max-w-xl">
       {c && (
@@ -151,7 +157,7 @@ function CandidateModal({ c, onClose, onShortlist, onRemove, onResume, busy, onS
                 <ContactRow icon={Phone} value={c.contact.phone} href={`tel:${c.contact.phone}`} />
               </div>
             )}
-            {c.stage && onStage && <PipelineControls key={rowKey(c)} c={c} onStage={onStage} onNotes={onNotes} onSchedule={onSchedule} onTask={onTask} />}
+            {c.stage && onStage && <PipelineControls key={rowKey(c)} c={c} onStage={onStage} onNotes={onNotes} onSchedule={onSchedule} onTask={onTask} onUnshortlist={onUnshortlist} />}
             {c.stage && onStage && <CandidateTasks candidateId={c.id} version={taskVersion} />}
             {!onStage && c.swipe === 'right' && (
               <Link to={`/messages?with=${c.id}`} className="btn-ghost w-full">
@@ -257,6 +263,23 @@ export default function CandidateListPage({ kind }) {
       toast.error(errorMessage(err));
     }
   };
+  // Takes the candidate off the shortlist for that job (see DELETE /company/pipeline/:id).
+  const unshortlist = async (c) => {
+    const job = c.job?.title ? ` for ${c.job.title}` : '';
+    if (!window.confirm(`Remove ${c.name} from the shortlist${job}?
+
+They won't show up in this job's feed again. If they aren't shortlisted for any other job, open interviews and tasks with them are cancelled and chat closes.`)) return;
+    try {
+      const { data } = await api.delete(`/company/pipeline/${c.swipeId}`);
+      setItems((list) => list.filter((x) => rowKey(x) !== rowKey(c)));
+      setOpen(null);
+      const n = data.cancelled.interviews + data.cancelled.tasks;
+      toast.success(n ? `Removed from shortlist · ${n} open interview/task cancelled` : 'Removed from shortlist');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
+
   const setStage = (c, stage) => stage !== c.stage && patchPipeline(c, { stage }, `Moved to ${STAGE_STYLES[stage].label}`);
   const setNotes = (c, notes) => patchPipeline(c, { notes }, 'Notes saved');
 
@@ -496,6 +519,7 @@ export default function CandidateListPage({ kind }) {
         onRemove={kind === 'wishlist' ? remove : undefined}
         onShortlist={kind === 'wishlist' ? shortlist : undefined}
         onStage={isPipeline ? setStage : undefined}
+        onUnshortlist={isPipeline ? unshortlist : undefined}
         onNotes={setNotes}
         onSchedule={setScheduling}
         onTask={setTasking}
