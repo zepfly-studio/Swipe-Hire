@@ -32,9 +32,6 @@ export default function AdminShell({ title, subtitle, actions, children }) {
   const [pending, setPending] = useState(0);
 
   useEffect(() => {
-    document.title = `${title} · Glide Recruit Admin`;
-  }, [title]);
-  useEffect(() => {
     api
       .get('/admin/verifications')
       .then(({ data }) => setPending(data.companies.length))

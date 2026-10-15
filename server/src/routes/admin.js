@@ -40,21 +40,23 @@ const daysAgo = (n) => new Date(Date.now() - n * 24 * 60 * 60 * 1000);
 
 // ---------- overview ----------
 router.get('/stats', async (_req, res) => {
+  // Admin logins are not customers; leave them out of every count.
+  const people = config.adminEmails.length ? { email: { $nin: config.adminEmails } } : {};
   const [
     candidates, companies, recruiters, liveCandidates, hiddenCandidates, completedCompanies, verifiedCompanies, pendingVerifications,
     suspended, unverifiedEmails, newUsers7d, jobsByStatus, swipes, shortlists, hires, messages, interviews, tasks, payments, signups,
   ] = await Promise.all([
-    User.countDocuments({ role: 'candidate' }),
-    User.countDocuments({ role: 'company', companyId: { $exists: false } }),
-    User.countDocuments({ role: 'company', companyId: { $exists: true } }),
+    User.countDocuments({ ...people, role: 'candidate' }),
+    User.countDocuments({ ...people, role: 'company', companyId: { $exists: false } }),
+    User.countDocuments({ ...people, role: 'company', companyId: { $exists: true } }),
     CandidateProfile.countDocuments({ step: 3, openToWork: { $ne: false }, suspended: { $ne: true } }),
     CandidateProfile.countDocuments({ step: 3, openToWork: false }),
     CompanyProfile.countDocuments({ completed: true }),
     CompanyProfile.countDocuments({ 'verification.status': 'verified' }),
     CompanyProfile.countDocuments({ 'verification.status': 'pending' }),
-    User.countDocuments({ suspended: true }),
-    User.countDocuments({ emailVerified: false }),
-    User.countDocuments({ createdAt: { $gte: daysAgo(7) } }),
+    User.countDocuments({ ...people, suspended: true }),
+    User.countDocuments({ ...people, emailVerified: false }),
+    User.countDocuments({ ...people, createdAt: { $gte: daysAgo(7) } }),
     Job.aggregate([{ $group: { _id: '$status', n: { $sum: 1 } } }]),
     Swipe.countDocuments({}),
     Swipe.countDocuments({ action: 'right' }),
@@ -64,7 +66,7 @@ router.get('/stats', async (_req, res) => {
     Task.countDocuments({}),
     Payment.aggregate([{ $match: { status: 'paid' } }, { $group: { _id: '$mode', n: { $sum: 1 }, amount: { $sum: '$amount' }, swipes: { $sum: '$swipes' } } }]),
     User.aggregate([
-      { $match: { createdAt: { $gte: daysAgo(13) } } },
+      { $match: { ...people, createdAt: { $gte: daysAgo(13) } } },
       { $group: { _id: { day: { $dateToString: { format: '%Y-%m-%d', date: '$createdAt', timezone: 'Asia/Kolkata' } }, role: '$role' }, n: { $sum: 1 } } },
     ]),
   ]);
@@ -77,7 +79,7 @@ router.get('/stats', async (_req, res) => {
     candidates: signups.find((s) => s._id.day === day && s._id.role === 'candidate')?.n || 0,
     companies: signups.find((s) => s._id.day === day && s._id.role === 'company')?.n || 0,
   }));
-  const recent = await User.find().sort({ createdAt: -1 }).limit(8).select('name email role companyId createdAt suspended').lean();
+  const recent = await User.find(people).sort({ createdAt: -1 }).limit(8).select('name email role companyId createdAt suspended').lean();
   res.json({
     users: { candidates, companies, recruiters, suspended, unverifiedEmails, newLast7Days: newUsers7d },
     candidates: { live: liveCandidates, hidden: hiddenCandidates, incomplete: Math.max(0, candidates - liveCandidates - hiddenCandidates) },

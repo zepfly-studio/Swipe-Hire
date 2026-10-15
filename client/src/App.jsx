@@ -7,6 +7,7 @@ import { Spinner } from './components/ui';
 import AuthPage from './pages/AuthPage';
 import LandingPage from './pages/LandingPage';
 import { applyRouteMeta } from './lib/seo';
+import { AdminGuard } from './pages/admin/AdminShell';
 
 const CandidateOnboarding = lazy(() => import('./pages/candidate/CandidateOnboarding'));
 const CandidateHome = lazy(() => import('./pages/candidate/CandidateHome'));
@@ -19,7 +20,12 @@ const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const InterviewsPage = lazy(() => import('./pages/InterviewsPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
-const AdminPage = lazy(() => import('./pages/AdminPage'));
+const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
+const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
+const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
+const AdminJobs = lazy(() => import('./pages/admin/AdminJobs'));
+const AdminPayments = lazy(() => import('./pages/admin/AdminPayments'));
+const AdminVerifications = lazy(() => import('./pages/admin/AdminVerifications'));
 const JobsPage = lazy(() => import('./pages/company/JobsPage'));
 const TeamPage = lazy(() => import('./pages/company/TeamPage'));
 const JoinPage = lazy(() => import('./pages/JoinPage'));
@@ -98,7 +104,7 @@ export default function App() {
   useEffect(() => applyRouteMeta(location.pathname), [location.pathname]);
   // Public pages (home, login) work without the API, so visitors and search engines still
   // see them if it's down; only the signed-in app shows the "can't reach" screen.
-  if (offline && !['/', '/auth', '/about'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
+  if (offline && !['/', '/auth', '/about', '/adminlogin'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -125,7 +131,14 @@ export default function App() {
         <Route path="/messages" element={<Guard onboarded><Page><MessagesPage /></Page></Guard>} />
         <Route path="/interviews" element={<Guard onboarded><Page><InterviewsPage /></Page></Guard>} />
         <Route path="/tasks" element={<Guard onboarded><Page><TasksPage /></Page></Guard>} />
-        <Route path="/admin" element={<Guard admin><Page><AdminPage /></Page></Guard>} />
+        <Route path="/adminlogin" element={<Page><AdminLoginPage /></Page>} />
+        <Route path="/admin" element={<AdminGuard><Page><AdminOverview /></Page></AdminGuard>} />
+        <Route path="/admin/candidates" element={<AdminGuard><Page><AdminUsers role="candidate" /></Page></AdminGuard>} />
+        <Route path="/admin/companies" element={<AdminGuard><Page><AdminUsers role="company" /></Page></AdminGuard>} />
+        <Route path="/admin/recruiters" element={<AdminGuard><Page><AdminUsers role="recruiter" /></Page></AdminGuard>} />
+        <Route path="/admin/jobs" element={<AdminGuard><Page><AdminJobs /></Page></AdminGuard>} />
+        <Route path="/admin/verifications" element={<AdminGuard><Page><AdminVerifications /></Page></AdminGuard>} />
+        <Route path="/admin/payments" element={<AdminGuard><Page><AdminPayments /></Page></AdminGuard>} />
 
         <Route path="*" element={<Page><NotFoundPage /></Page>} />
       </Routes>

@@ -1,13 +1,13 @@
 import { useEffect, useState } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { Check, ExternalLink, ShieldCheck, X } from 'lucide-react';
+import { Check, ExternalLink, X } from 'lucide-react';
 import toast from 'react-hot-toast';
-import AppShell from '../components/AppShell';
-import { Button, Spinner } from '../components/ui';
-import { api, errorMessage } from '../lib/api';
+import { Button, Spinner } from '../../components/ui';
+import { api, errorMessage } from '../../lib/api';
+import AdminShell from './AdminShell';
 
 // Review companies that asked to be verified with their GSTIN.
-export default function AdminPage() {
+export default function AdminVerifications() {
   const [items, setItems] = useState(null);
   const [busy, setBusy] = useState(null);
 
@@ -35,14 +35,7 @@ export default function AdminPage() {
   };
 
   return (
-    <AppShell>
-      <h1 className="flex items-center gap-3 text-3xl font-extrabold tracking-tight">
-        <ShieldCheck className="text-sky-400" />
-        Admin · company verification
-      </h1>
-      <p className="mt-1 mb-8 text-white/50">
-        Check each GSTIN on the government portal before approving.
-      </p>
+    <AdminShell title="Verifications" subtitle="Companies that asked to be verified with their GSTIN. Check each one on the government portal before approving.">
       {!items && <Spinner className="py-20" />}
       {items?.length === 0 && <p className="glass rounded-3xl p-10 text-center text-white/50">No pending requests 🎉</p>}
       <div className="space-y-3">
@@ -87,6 +80,6 @@ export default function AdminPage() {
           ))}
         </AnimatePresence>
       </div>
-    </AppShell>
+    </AdminShell>
   );
 }

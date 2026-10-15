@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Navigate, useNavigate } from 'react-router-dom';
 import { Eye, EyeOff, Lock, Mail, ShieldCheck } from 'lucide-react';
 import Background from '../../components/Background';
@@ -17,10 +17,6 @@ export default function AdminLoginPage() {
   const [show, setShow] = useState(false);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
-
-  useEffect(() => {
-    document.title = 'Admin login · Glide Recruit';
-  }, []);
 
   if (loading) return <Spinner className="min-h-dvh" />;
   if (user?.isAdmin) return <Navigate to="/admin" replace />;
