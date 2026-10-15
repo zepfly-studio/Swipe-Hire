@@ -42,13 +42,13 @@ export function SwipeCounter() {
       whileTap={{ scale: 0.95 }}
       onClick={() => navigate('/company/plans')}
       className={cx(
-        'flex items-center gap-1.5 overflow-hidden rounded-full px-3.5 py-2 text-sm font-bold ring-1',
+        'flex shrink-0 items-center gap-1.5 overflow-hidden whitespace-nowrap rounded-full px-3.5 py-2 text-sm font-bold tabular-nums ring-1',
         left > 0 ? 'bg-white/[0.06] ring-white/10' : 'bg-brand-500/15 text-brand-400 ring-brand-500/40',
       )}
       title="Swipes left"
     >
-      <Zap size={15} className={left > 0 ? 'text-amber-300' : ''} fill="currentColor" />
-      <span className="relative inline-flex h-5 min-w-[1ch] justify-center overflow-hidden">
+      <Zap size={15} className={cx('shrink-0', left > 0 && 'text-amber-300')} fill="currentColor" />
+      <span className="relative inline-flex h-5 shrink-0 justify-center overflow-hidden">
         <AnimatePresence mode="popLayout" initial={false}>
           <motion.span
             key={left}
@@ -171,9 +171,9 @@ export default function AppShell({ children }) {
     <div className="min-h-dvh pb-24 md:pb-0">
       <Background />
       <header className="sticky top-0 z-40 border-b border-white/5 bg-ink-950/60 backdrop-blur-xl">
-        <div className="mx-auto flex h-16 max-w-6xl items-center gap-2 px-4">
+        <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4">
           <Logo />
-          <nav className="ml-4 hidden items-center gap-1 md:flex lg:ml-6">
+          <nav className="ml-4 hidden min-w-0 items-center gap-1 md:flex lg:ml-6">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} title={l.label} className="relative rounded-xl px-3 py-2 text-sm font-semibold">
                 {({ isActive }) => (
@@ -192,7 +192,7 @@ export default function AppShell({ children }) {
               </NavLink>
             ))}
           </nav>
-          <div className="ml-auto flex items-center gap-2">
+          <div className="ml-auto flex shrink-0 items-center gap-2">
             {isCompany && <SwipeCounter />}
             <NotificationBell />
             <ProfileMenu />
