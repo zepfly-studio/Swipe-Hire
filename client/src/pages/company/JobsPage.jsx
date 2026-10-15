@@ -27,7 +27,8 @@ function Stat({ value, label }) {
 }
 
 function JobCard({ job, onEdit, onStatus, busy }) {
-  const s = STATUS[job.status];
+  // A job waiting for admin approval can't be swiped yet.
+  const s = job.approved === false ? { label: 'Awaiting approval', cls: 'bg-amber-300/15 text-amber-200' } : STATUS[job.status];
   return (
     <motion.div
       layout

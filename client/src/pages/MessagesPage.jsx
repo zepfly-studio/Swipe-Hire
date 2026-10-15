@@ -1,7 +1,7 @@
 import { useEffect, useLayoutEffect, useRef, useState } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { ArrowLeft, CalendarPlus, Check, CheckCheck, MessageCircle, Search, Send, SquarePen, X } from 'lucide-react';
+import { ArrowLeft, CalendarPlus, Check, CheckCheck, Flag, MessageCircle, Search, Send, SquarePen, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AppShell from '../components/AppShell';
 import Avatar from '../components/Avatar';
@@ -9,6 +9,7 @@ import CompanyModal from '../components/CompanyModal';
 import Illustration from '../components/Illustration';
 import Modal from '../components/Modal';
 import ScheduleInterviewModal from '../components/ScheduleInterviewModal';
+import ReportModal from '../components/ReportModal';
 import { timeAgo } from '../components/NotificationBell';
 import { Input, Spinner, StagePill, VerifiedBadge } from '../components/ui';
 import { useAuth } from '../context/AuthContext';
@@ -75,6 +76,7 @@ function Thread({ otherId, isCompany, onBack, onSent }) {
   const [text, setText] = useState('');
   const [sending, setSending] = useState(false);
   const [scheduling, setScheduling] = useState(false);
+  const [reporting, setReporting] = useState(false);
   const [aboutOpen, setAboutOpen] = useState(false);
   const bottom = useRef(null);
   const lastCount = useRef(0);
@@ -148,6 +150,9 @@ function Thread({ otherId, isCompany, onBack, onSent }) {
             <span className="hidden sm:inline">Interview</span>
           </button>
         )}
+        <button onClick={() => setReporting(true)} className="btn-ghost p-2 text-white/50 hover:text-danger" title={`Report ${other.name}`} aria-label={`Report ${other.name}`}>
+          <Flag size={16} />
+        </button>
       </div>
 
       <div className="no-scrollbar flex-1 space-y-1.5 overflow-y-auto px-4 py-4">
@@ -224,6 +229,7 @@ function Thread({ otherId, isCompany, onBack, onSent }) {
 
       {!isCompany && <CompanyModal companyId={aboutOpen ? otherId : null} onClose={() => setAboutOpen(false)} />}
       <ScheduleInterviewModal candidate={scheduling ? { id: otherId, name: other.name } : null} onClose={() => setScheduling(false)} />
+      <ReportModal target={reporting ? { id: otherId, name: other.name } : null} onClose={() => setReporting(false)} />
     </div>
   );
 }

@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BadgeCheck, Bell, BellRing, CalendarClock, CheckCheck, ClipboardList, MessageCircle, PartyPopper, Sparkles } from 'lucide-react';
+import { BadgeCheck, Bell, BellRing, CalendarClock, CheckCheck, ClipboardList, LifeBuoy, Megaphone, MessageCircle, PartyPopper, Sparkles } from 'lucide-react';
 import { api, cx } from '../lib/api';
 import { usePoll } from '../hooks/usePoll';
 import Illustration from './Illustration';
@@ -14,6 +14,8 @@ const ICONS = {
   verified: BadgeCheck,
   alert: BellRing,
   task: ClipboardList,
+  announcement: Megaphone,
+  support: LifeBuoy,
 };
 
 export function timeAgo(date) {

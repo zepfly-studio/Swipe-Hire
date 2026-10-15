@@ -1,5 +1,6 @@
 import { useEffect, useState } from 'react';
-import { Briefcase, Building2, Calendar, Globe, Link2, Mail, MapPin, MessageCircle, Phone, Users, X } from 'lucide-react';
+import { Briefcase, Building2, Calendar, Flag, Globe, Link2, Mail, MapPin, MessageCircle, Phone, Users, X } from 'lucide-react';
+import ReportModal from './ReportModal';
 import { Link } from 'react-router-dom';
 import Modal from './Modal';
 import Avatar from './Avatar';
@@ -26,6 +27,7 @@ function Row({ icon: Icon, label, value, href }) {
 function Details({ companyId, onClose }) {
   const [c, setC] = useState(null);
   const [error, setError] = useState('');
+  const [reporting, setReporting] = useState(false);
   useEffect(() => {
     api
       .get(`/candidate/companies/${companyId}`)
@@ -96,12 +98,16 @@ function Details({ companyId, onClose }) {
           </p>
         )}
       </div>
-      <div className="border-t border-white/10 p-4">
-        <Link to={`/messages?with=${c.id}`} className="btn-primary w-full">
+      <div className="flex gap-2 border-t border-white/10 p-4">
+        <Link to={`/messages?with=${c.id}`} className="btn-primary flex-1">
           <MessageCircle size={17} />
           Message {c.name}
         </Link>
+        <button onClick={() => setReporting(true)} className="btn-ghost px-3 text-white/55 hover:text-danger" title="Report this company" aria-label="Report this company">
+          <Flag size={17} />
+        </button>
       </div>
+      <ReportModal target={reporting ? { id: c.id, name: c.name } : null} onClose={() => setReporting(false)} />
     </>
   );
 }

@@ -1,11 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Ban, BadgeCheck, Coins, FileText, MailCheck, RotateCcw, Trash2, X } from 'lucide-react';
+import { ArrowLeft, Ban, BadgeCheck, Coins, FileText, KeyRound, MailCheck, Pencil, Receipt, RotateCcw, Trash2, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Avatar from '../../components/Avatar';
 import Modal from '../../components/Modal';
-import { Button, Spinner, StagePill } from '../../components/ui';
-import { api, errorMessage, fileUrl } from '../../lib/api';
-import { dateOf, lpa, Pill } from './AdminShell';
+import { Button, Field, Input, Spinner, StagePill, Textarea } from '../../components/ui';
+import { api, cx, errorMessage, fileUrl } from '../../lib/api';
+import { dateOf, lpa, Pill, useCan } from './AdminShell';
 
 function Row({ label, value }) {
   if (value == null || value === '' || (Array.isArray(value) && !value.length)) return null;
@@ -30,6 +30,122 @@ function Counts({ items }) {
   );
 }
 
+const when = (d) => new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', hour: 'numeric', minute: '2-digit' });
+
+// Edit the most common profile fields (support role).
+function EditForm({ d, onSaved, onCancel }) {
+  const u = d.user;
+  const isCand = Boolean(d.profile);
+  const [f, setF] = useState(
+    isCand
+      ? { name: u.name, headline: d.profile.headline || '', location: d.profile.location || '', phone: d.profile.phone || '', about: d.profile.about || '' }
+      : { name: u.name, companyName: d.company?.companyName || '', location: d.company?.location || '', website: d.company?.website || '', phone: d.company?.phone || '', about: d.company?.about || '' },
+  );
+  const [busy, setBusy] = useState(false);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const save = async () => {
+    setBusy(true);
+    try {
+      const { name, ...rest } = f;
+      await api.patch(`/admin/users/${u.id}/profile`, isCand ? { name, candidate: rest } : { name, company: rest });
+      toast.success('Profile updated');
+      onSaved();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <div className="mt-4 space-y-3 rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/[0.06]">
+      <div className="grid gap-3 sm:grid-cols-2">
+        <Field label="Person's name"><Input value={f.name} onChange={set('name')} maxLength={80} /></Field>
+        {isCand ? (
+          <>
+            <Field label="Headline"><Input value={f.headline} onChange={set('headline')} maxLength={80} /></Field>
+            <Field label="Location"><Input value={f.location} onChange={set('location')} maxLength={80} /></Field>
+            <Field label="Phone"><Input value={f.phone} onChange={set('phone')} maxLength={20} /></Field>
+          </>
+        ) : (
+          <>
+            <Field label="Company name"><Input value={f.companyName} onChange={set('companyName')} maxLength={100} /></Field>
+            <Field label="Location"><Input value={f.location} onChange={set('location')} maxLength={80} /></Field>
+            <Field label="Website"><Input value={f.website} onChange={set('website')} maxLength={200} /></Field>
+            <Field label="Phone"><Input value={f.phone} onChange={set('phone')} maxLength={20} /></Field>
+          </>
+        )}
+      </div>
+      <Field label="About"><Textarea value={f.about} onChange={set('about')} maxLength={isCand ? 600 : 1500} /></Field>
+      <div className="flex justify-end gap-2">
+        <button className="btn-ghost py-2 text-sm" onClick={onCancel}>Cancel</button>
+        <Button className="btn-primary py-2 text-sm" loading={busy} onClick={save}>Save changes</Button>
+      </div>
+    </div>
+  );
+}
+
+// Conversations of this account, and one conversation's messages.
+function Chats({ userId }) {
+  const [list, setList] = useState(null);
+  const [open, setOpen] = useState(null);
+  const [msgs, setMsgs] = useState(null);
+  useEffect(() => {
+    api.get(`/admin/users/${userId}/chats`).then(({ data }) => setList(data.chats)).catch(() => setList([]));
+  }, [userId]);
+  const show = (c) => {
+    setOpen(c);
+    setMsgs(null);
+    api.get('/admin/chats', { params: { company: c.company.id, candidate: c.candidate.id } }).then(({ data }) => setMsgs(data.messages)).catch((err) => toast.error(errorMessage(err)));
+  };
+  const remove = async (m) => {
+    if (!window.confirm('Delete this message for both people?')) return;
+    try {
+      await api.delete(`/admin/messages/${m.id}`);
+      setMsgs((x) => x.filter((y) => y.id !== m.id));
+      toast.success('Message deleted');
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
+  if (!list) return <Spinner className="py-6" />;
+  if (!list.length) return <p className="text-sm text-white/45">No conversations.</p>;
+  if (open)
+    return (
+      <div className="rounded-2xl bg-white/[0.03] p-3 ring-1 ring-white/[0.06]">
+        <button onClick={() => setOpen(null)} className="mb-2 flex items-center gap-1 text-sm font-semibold text-white/60 hover:text-white">
+          <ArrowLeft size={15} /> {open.company.name} ↔ {open.candidate.name}
+        </button>
+        {!msgs ? (
+          <Spinner className="py-6" />
+        ) : (
+          <div className="max-h-80 space-y-1.5 overflow-y-auto pr-1">
+            {msgs.map((m) => (
+              <div key={m.id} className={cx('group flex items-start gap-2', m.fromCandidate ? '' : 'flex-row-reverse')}>
+                <div className={cx('max-w-[80%] rounded-2xl px-3 py-2 text-sm', m.fromCandidate ? 'bg-white/[0.06]' : 'bg-brand-500/10')}>
+                  <p className="text-[11px] font-bold text-white/50">{m.sender} · {when(m.at)}</p>
+                  <p className="whitespace-pre-wrap">{m.text}</p>
+                </div>
+                <button onClick={() => remove(m)} className="mt-1 hidden rounded-lg p-1 text-danger hover:bg-red-500/10 group-hover:block" aria-label="Delete message"><Trash2 size={14} /></button>
+              </div>
+            ))}
+          </div>
+        )}
+      </div>
+    );
+  return (
+    <ul className="space-y-1.5 text-sm">
+      {list.map((c) => (
+        <li key={c.company.id + c.candidate.id}>
+          <button onClick={() => show(c)} className="flex w-full items-center justify-between gap-2 rounded-xl bg-white/[0.04] px-3 py-2 text-left hover:bg-white/[0.07]">
+            <span className="min-w-0 truncate"><b>{c.company.name} ↔ {c.candidate.name}</b> <span className="text-white/50">· {c.last}</span></span>
+            <span className="shrink-0 text-xs text-white/45">{c.count} msgs</span>
+          </button>
+        </li>
+      ))}
+    </ul>
+  );
+}
+
 const H = ({ children }) => <h3 className="mb-2 mt-6 text-[11px] font-bold uppercase tracking-[0.14em] text-white/45">{children}</h3>;
 
 // Full view of one account with admin actions. `id` = user id (owner id for companies).
@@ -37,6 +153,9 @@ export default function UserDetail({ id, onClose, onChanged }) {
   const [d, setD] = useState(null);
   const [busy, setBusy] = useState('');
   const [credits, setCredits] = useState('');
+  const [editing, setEditing] = useState(false);
+  const [manual, setManual] = useState({ amount: '', swipes: '', reference: '', note: '' });
+  const can = useCan();
 
   const load = () => {
     setD(null);
@@ -51,6 +170,7 @@ export default function UserDetail({ id, onClose, onChanged }) {
   useEffect(() => {
     if (id) load();
     setCredits('');
+    setEditing(false);
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [id]);
 
@@ -103,6 +223,24 @@ export default function UserDetail({ id, onClose, onChanged }) {
     if (!n || n < 1) return toast.error('Enter a number of swipes');
     act('credits', () => api.patch(`/admin/companies/${companyId}`, { swipesDelta: sign * n }), `${sign > 0 ? 'Added' : 'Removed'} ${n} swipes`).then(() => setCredits(''));
   };
+  const tempPassword = async () => {
+    if (!window.confirm(`Reset ${u.name}'s password? They will be logged out and get a new password by email.`)) return;
+    setBusy('pw');
+    try {
+      const { data } = await api.post(`/admin/users/${u.id}/temp-password`);
+      window.prompt(data.emailed ? 'New password (also emailed to them). Copy it if you need to share it:' : 'Email is not set up, so share this new password with them yourself:', data.password);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy('');
+    }
+  };
+  const addManual = () =>
+    act(
+      'manual',
+      () => api.post('/admin/payments/manual', { companyId, amount: Number(manual.amount), swipes: Number(manual.swipes), reference: manual.reference, note: manual.note }),
+      'Payment recorded and swipes added',
+    ).then(() => setManual({ amount: '', swipes: '', reference: '', note: '' }));
   const setVerified = (verification) => act('verify', () => api.patch(`/admin/companies/${companyId}`, { verification }), verification === 'verified' ? 'Company verified' : 'Badge removed');
 
   return (
@@ -137,18 +275,18 @@ export default function UserDetail({ id, onClose, onChanged }) {
           <div className="no-scrollbar flex-1 overflow-y-auto p-5">
             {/* Actions */}
             <div className="flex flex-wrap gap-2">
-              {!u.isAdmin && (
+              {!u.isAdmin && can('users.manage') && (
                 <Button className="btn-ghost py-2 text-sm" onClick={suspend} loading={busy === 'suspend'}>
                   {u.suspended ? <RotateCcw size={15} /> : <Ban size={15} />}
                   {u.suspended ? 'Reinstate' : 'Suspend'}
                 </Button>
               )}
-              {!u.emailVerified && (
+              {!u.emailVerified && can('users.edit') && (
                 <Button className="btn-ghost py-2 text-sm" onClick={() => act('email', () => api.patch(`/admin/users/${u.id}`, { emailVerified: true }), 'Email marked verified')} loading={busy === 'email'}>
                   <MailCheck size={15} /> Mark email verified
                 </Button>
               )}
-              {d.company && (
+              {d.company && can('verify') && (
                 d.company.verification?.status === 'verified' ? (
                   <Button className="btn-ghost py-2 text-sm" onClick={() => setVerified('none')} loading={busy === 'verify'}>
                     <BadgeCheck size={15} /> Remove verified badge
@@ -159,12 +297,24 @@ export default function UserDetail({ id, onClose, onChanged }) {
                   </Button>
                 )
               )}
-              {!u.isAdmin && (
+              {can('users.edit') && (d.profile || d.company) && (
+                <Button className="btn-ghost py-2 text-sm" onClick={() => setEditing((e) => !e)}>
+                  <Pencil size={15} /> Edit profile
+                </Button>
+              )}
+              {!u.isAdmin && can('users.edit') && (
+                <Button className="btn-ghost py-2 text-sm" onClick={tempPassword} loading={busy === 'pw'}>
+                  <KeyRound size={15} /> Reset password
+                </Button>
+              )}
+              {!u.isAdmin && can('users.delete') && (
                 <Button className="btn-ghost py-2 text-sm text-danger" onClick={remove} loading={busy === 'delete'}>
                   <Trash2 size={15} /> Delete account
                 </Button>
               )}
             </div>
+
+            {editing && <EditForm d={d} onCancel={() => setEditing(false)} onSaved={() => { setEditing(false); load(); onChanged?.(); }} />}
 
             {d.profile && (
               <>
@@ -200,6 +350,12 @@ export default function UserDetail({ id, onClose, onChanged }) {
                   )}
                   {d.profile.videoUrl && <video src={fileUrl(d.profile.videoUrl)} controls className="max-h-56 w-full rounded-xl bg-black" />}
                 </div>
+                {can('chats') && (
+                  <>
+                    <H>Chats</H>
+                    <Chats userId={u.id} />
+                  </>
+                )}
                 <H>Shortlisted by ({d.shortlistedBy.length})</H>
                 {d.shortlistedBy.length ? (
                   <ul className="space-y-1.5">
@@ -223,7 +379,7 @@ export default function UserDetail({ id, onClose, onChanged }) {
                 <H>Activity</H>
                 <Counts items={[['Swipes', d.counts.swipes], ['Shortlists', d.counts.shortlists], ['Hired', d.counts.hired], ['Messages', d.counts.messages], ['Interviews', d.counts.interviews], ['Tasks', d.counts.tasks]]} />
                 <H>Swipe credits</H>
-                <div className="flex flex-wrap items-center gap-2 rounded-2xl bg-white/[0.04] p-3">
+                <div className={cx('flex flex-wrap items-center gap-2 rounded-2xl bg-white/[0.04] p-3', !can('credits') && 'pointer-events-none opacity-60')}>
                   <p className="mr-auto text-sm">
                     <Coins size={15} className="mr-1 inline text-amber-300" />
                     <b className="tabular-nums">{d.company.swipesLeft}</b> left · {d.company.swipesPurchased || 0} bought in total
@@ -284,6 +440,26 @@ export default function UserDetail({ id, onClose, onChanged }) {
                   ))}
                   {!d.jobs.length && <p className="text-white/45">No jobs yet.</p>}
                 </ul>
+                {can('credits') && (
+                  <>
+                    <H>Record a manual payment</H>
+                    <p className="mb-2 text-xs text-white/50">For money received by bank transfer or UPI. Adds the swipes straight away.</p>
+                    <div className="grid gap-2 sm:grid-cols-4">
+                      <Input type="number" min="0" value={manual.amount} onChange={(e) => setManual({ ...manual, amount: e.target.value })} placeholder="Amount ₹" aria-label="Amount received" />
+                      <Input type="number" min="1" value={manual.swipes} onChange={(e) => setManual({ ...manual, swipes: e.target.value })} placeholder="Swipes" aria-label="Swipes to add" />
+                      <Input value={manual.reference} onChange={(e) => setManual({ ...manual, reference: e.target.value })} placeholder="UPI / bank ref." aria-label="Reference" />
+                      <Button className="btn-primary text-sm" onClick={addManual} loading={busy === 'manual'} disabled={!manual.amount || !manual.swipes}>
+                        <Receipt size={15} /> Record
+                      </Button>
+                    </div>
+                  </>
+                )}
+                {can('chats') && (
+                  <>
+                    <H>Chats</H>
+                    <Chats userId={companyId} />
+                  </>
+                )}
                 <H>Payments ({d.payments.length})</H>
                 <ul className="space-y-1.5 text-sm">
                   {d.payments.map((p) => (

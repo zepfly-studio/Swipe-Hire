@@ -3,10 +3,10 @@ import { BadgeCheck, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, lpa, Pager, Pill } from './AdminShell';
+import AdminShell, { dateOf, ExportButton, lpa, Pager, Pill, useCan } from './AdminShell';
 import UserDetail from './UserDetail';
 
-const STATUSES = [['', 'All'], ['open', 'Open'], ['paused', 'Paused'], ['closed', 'Closed']];
+const STATUSES = [['', 'All'], ['pending', 'Awaiting approval'], ['flagged', 'Flagged'], ['open', 'Open'], ['paused', 'Paused'], ['closed', 'Closed']];
 const tone = { open: 'green', paused: 'amber', closed: 'gray' };
 
 // Every job on the platform; admins can pause, close, reopen or delete one.
@@ -45,6 +45,16 @@ export default function AdminJobs() {
       toast.error(errorMessage(err));
     }
   };
+  const can = useCan();
+  const patchJob = async (j, body, ok) => {
+    try {
+      await api.patch(`/admin/jobs/${j.id}`, body);
+      toast.success(ok);
+      load();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
   const remove = async (j) => {
     if (!window.confirm(`Delete "${j.title}" at ${j.company.name}? Shortlists made for it stay in the company's pipeline.`)) return;
     try {
@@ -57,7 +67,7 @@ export default function AdminJobs() {
   };
 
   return (
-    <AdminShell title="Jobs" subtitle="Every job posted by every company.">
+    <AdminShell title="Jobs" subtitle="Every job posted by every company. Approve waiting jobs and flag suspicious ones." actions={<ExportButton kind="jobs" />}>
       <div className="glass mb-4 space-y-3 rounded-3xl p-4">
         <label className="relative block">
           <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
@@ -96,8 +106,14 @@ export default function AdminJobs() {
                       {j.company.verified && <BadgeCheck size={14} className="text-sky-400" />}
                     </button>
                   </div>
-                  <Pill tone={tone[j.status]}>{j.status}</Pill>
+                  <span className="flex shrink-0 flex-col items-end gap-1">
+                    <Pill tone={tone[j.status]}>{j.status}</Pill>
+                    {!j.approved && <Pill tone="amber">Awaiting approval</Pill>}
+                    {j.flagged && <Pill tone="red">Flagged</Pill>}
+                  </span>
                 </div>
+                {j.flagged && <p className="mt-2 rounded-xl bg-red-500/10 px-3 py-2 text-xs text-danger">Flagged: {j.flagged.reason}</p>}
+                {j.description && <p className="mt-2 line-clamp-2 text-sm text-white/55">{j.description}</p>}
                 <p className="mt-2 text-sm text-white/60">
                   {[j.jobLocation, j.workMode, j.jobType].filter(Boolean).join(' · ')} · {lpa(j.salaryMin, j.salaryMax)} · {j.minExperience ?? 0}–{j.maxExperience ?? '∞'} yrs · {j.openings} opening
                   {j.openings === 1 ? '' : 's'}
@@ -121,7 +137,27 @@ export default function AdminJobs() {
                   </span>
                   <span className="ml-auto">Posted {dateOf(j.createdAt)}</span>
                 </div>
-                <div className="mt-4 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3">
+                <div className={cx('mt-4 flex flex-wrap gap-2 border-t border-white/[0.06] pt-3', !can('jobs') && 'hidden')}>
+                  {!j.approved && (
+                    <button className="btn-primary px-3 py-1.5 text-sm" onClick={() => patchJob(j, { approved: true }, 'Job approved; the company was told')}>
+                      Approve
+                    </button>
+                  )}
+                  {j.flagged ? (
+                    <button className="btn-ghost px-3 py-1.5 text-sm" onClick={() => patchJob(j, { flagged: false }, 'Flag removed')}>
+                      Unflag
+                    </button>
+                  ) : (
+                    <button
+                      className="btn-ghost px-3 py-1.5 text-sm"
+                      onClick={() => {
+                        const reason = window.prompt('Why is this job suspicious?', 'Looks like spam');
+                        if (reason !== null) patchJob(j, { flagged: true, flagReason: reason }, 'Job flagged');
+                      }}
+                    >
+                      Flag
+                    </button>
+                  )}
                   {j.status !== 'open' && (
                     <button className="btn-ghost px-3 py-1.5 text-sm" onClick={() => setJobStatus(j, 'open')}>
                       Reopen

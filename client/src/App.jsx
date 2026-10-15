@@ -8,6 +8,7 @@ import AuthPage from './pages/AuthPage';
 import LandingPage from './pages/LandingPage';
 import { applyRouteMeta } from './lib/seo';
 import { AdminGuard } from './pages/admin/AdminShell';
+import { useSite } from './lib/site';
 
 const CandidateOnboarding = lazy(() => import('./pages/candidate/CandidateOnboarding'));
 const CandidateHome = lazy(() => import('./pages/candidate/CandidateHome'));
@@ -20,6 +21,17 @@ const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const InterviewsPage = lazy(() => import('./pages/InterviewsPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const SupportPage = lazy(() => import('./pages/SupportPage'));
+const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
+const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
+const AdminReview = lazy(() => import('./pages/admin/AdminReview'));
+const AdminTickets = lazy(() => import('./pages/admin/AdminTickets'));
+const AdminAnnounce = lazy(() => import('./pages/admin/AdminAnnounce'));
+const AdminPlans = lazy(() => import('./pages/admin/AdminPlans'));
+const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminContent = lazy(() => import('./pages/admin/AdminContent'));
+const AdminAdmins = lazy(() => import('./pages/admin/AdminAdmins'));
+const AdminLogs = lazy(() => import('./pages/admin/AdminLogs'));
 const AdminLoginPage = lazy(() => import('./pages/admin/AdminLoginPage'));
 const AdminOverview = lazy(() => import('./pages/admin/AdminOverview'));
 const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
@@ -82,6 +94,21 @@ function Page({ children }) {
   );
 }
 
+function MaintenanceScreen({ message }) {
+  return (
+    <div className="grid min-h-dvh place-items-center px-6 text-center">
+      <div className="max-w-md">
+        <Illustration name="maintenance" />
+        <h1 className="mt-4 text-2xl font-extrabold">We'll be back soon</h1>
+        <p className="mt-2 text-white/55">{message || 'Glide Recruit is down for maintenance. Please try again in a little while.'}</p>
+        <button onClick={() => window.location.reload()} className="btn-primary mt-6">
+          Try again
+        </button>
+      </div>
+    </div>
+  );
+}
+
 function OfflineScreen({ onRetry }) {
   return (
     <div className="grid min-h-dvh place-items-center px-6 text-center">
@@ -99,12 +126,15 @@ function OfflineScreen({ onRetry }) {
 
 export default function App() {
   const location = useLocation();
-  const { offline, refresh } = useAuth();
+  const { offline, refresh, user } = useAuth();
+  const site = useSite();
   // Title, description, canonical and robots for each page.
   useEffect(() => applyRouteMeta(location.pathname), [location.pathname]);
   // Public pages (home, login) work without the API, so visitors and search engines still
   // see them if it's down; only the signed-in app shows the "can't reach" screen.
   if (offline && !['/', '/auth', '/about', '/adminlogin'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
+  // Maintenance mode: admins keep working; the admin login stays reachable.
+  if (site.maintenance.on && !user?.isAdmin && !location.pathname.startsWith('/admin')) return <MaintenanceScreen message={site.maintenance.message} />;
   return (
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
@@ -139,6 +169,17 @@ export default function App() {
         <Route path="/admin/jobs" element={<AdminGuard><Page><AdminJobs /></Page></AdminGuard>} />
         <Route path="/admin/verifications" element={<AdminGuard><Page><AdminVerifications /></Page></AdminGuard>} />
         <Route path="/admin/payments" element={<AdminGuard><Page><AdminPayments /></Page></AdminGuard>} />
+        <Route path="/admin/analytics" element={<AdminGuard><Page><AdminAnalytics /></Page></AdminGuard>} />
+        <Route path="/admin/reports" element={<AdminGuard><Page><AdminReports /></Page></AdminGuard>} />
+        <Route path="/admin/review" element={<AdminGuard><Page><AdminReview /></Page></AdminGuard>} />
+        <Route path="/admin/tickets" element={<AdminGuard><Page><AdminTickets /></Page></AdminGuard>} />
+        <Route path="/admin/announce" element={<AdminGuard><Page><AdminAnnounce /></Page></AdminGuard>} />
+        <Route path="/admin/plans" element={<AdminGuard><Page><AdminPlans /></Page></AdminGuard>} />
+        <Route path="/admin/settings" element={<AdminGuard><Page><AdminSettings /></Page></AdminGuard>} />
+        <Route path="/admin/content" element={<AdminGuard><Page><AdminContent /></Page></AdminGuard>} />
+        <Route path="/admin/admins" element={<AdminGuard><Page><AdminAdmins /></Page></AdminGuard>} />
+        <Route path="/admin/logs" element={<AdminGuard><Page><AdminLogs /></Page></AdminGuard>} />
+        <Route path="/support" element={<Guard><Page><SupportPage /></Page></Guard>} />
 
         <Route path="*" element={<Page><NotFoundPage /></Page>} />
       </Routes>

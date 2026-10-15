@@ -5,7 +5,10 @@ import { MotionConfig } from 'framer-motion';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import App from './App';
+import { loadSite } from './lib/site';
 import './index.css';
+
+loadSite();
 
 createRoot(document.getElementById('root')).render(
   <StrictMode>

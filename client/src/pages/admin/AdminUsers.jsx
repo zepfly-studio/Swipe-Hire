@@ -1,10 +1,11 @@
 import { useEffect, useState } from 'react';
-import { Search } from 'lucide-react';
+import { Bell, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import Avatar from '../../components/Avatar';
-import { Spinner } from '../../components/ui';
+import Modal from '../../components/Modal';
+import { Button, Field, Input, Spinner, Textarea } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, lpa, Pager, Pill } from './AdminShell';
+import AdminShell, { dateOf, ExportButton, lpa, Pager, Pill, useCan } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const CONFIG = {
@@ -44,6 +45,43 @@ function Status({ u, role }) {
   return <Pill tone="green">Active</Pill>;
 }
 
+// Notification (and optional email) to the selected accounts.
+function NotifyModal({ ids, onClose }) {
+  const [f, setF] = useState({ title: '', body: '', link: '', email: false });
+  const [busy, setBusy] = useState(false);
+  const send = async () => {
+    setBusy(true);
+    try {
+      const { data } = await api.post('/admin/announce', { ...f, audience: 'selected', ids });
+      toast.success(`Sent to ${data.sent} people`);
+      onClose(true);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBusy(false);
+    }
+  };
+  return (
+    <Modal open={Boolean(ids)} onClose={() => onClose(false)}>
+      {ids && (
+        <div className="space-y-4 overflow-y-auto p-5">
+          <h2 className="text-xl font-extrabold">Notify {ids.length} selected</h2>
+          <Field label="Title"><Input value={f.title} onChange={(e) => setF({ ...f, title: e.target.value })} maxLength={120} /></Field>
+          <Field label="Message" hint="Optional"><Textarea value={f.body} onChange={(e) => setF({ ...f, body: e.target.value })} maxLength={1000} /></Field>
+          <Field label="Opens page" hint="Optional, e.g. /company/plans"><Input value={f.link} onChange={(e) => setF({ ...f, link: e.target.value })} /></Field>
+          <label className="flex items-center gap-2 text-sm font-semibold">
+            <input type="checkbox" checked={f.email} onChange={(e) => setF({ ...f, email: e.target.checked })} className="size-4 accent-[#0f4d42]" /> Also send by email
+          </label>
+          <div className="flex gap-2">
+            <button className="btn-ghost flex-1" onClick={() => onClose(false)}>Cancel</button>
+            <Button className="btn-primary flex-1" loading={busy} disabled={!f.title.trim()} onClick={send}>Send</Button>
+          </div>
+        </div>
+      )}
+    </Modal>
+  );
+}
+
 export default function AdminUsers({ role }) {
   const cfg = CONFIG[role];
   const [q, setQ] = useState('');
@@ -52,6 +90,10 @@ export default function AdminUsers({ role }) {
   const [page, setPage] = useState(1);
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(null);
+  const [selected, setSelected] = useState(new Set());
+  const [notify, setNotify] = useState(null);
+  const [bulkBusy, setBulkBusy] = useState('');
+  const can = useCan();
 
   // Search waits for a pause in typing.
   useEffect(() => {
@@ -65,7 +107,10 @@ export default function AdminUsers({ role }) {
   const load = () =>
     api
       .get('/admin/users', { params: { role, status, q: query, page } })
-      .then(({ data }) => setData(data))
+      .then(({ data }) => {
+        setData(data);
+        setSelected(new Set());
+      })
       .catch((err) => toast.error(errorMessage(err)));
   useEffect(() => {
     setData(null);
@@ -78,8 +123,34 @@ export default function AdminUsers({ role }) {
     setPage(1);
   }, [role]);
 
+  const toggle = (id) =>
+    setSelected((s) => {
+      const n = new Set(s);
+      n.has(id) ? n.delete(id) : n.add(id);
+      return n;
+    });
+  const bulk = async (action) => {
+    const n = selected.size;
+    const ask = { suspend: `Suspend ${n} accounts?`, reinstate: `Reinstate ${n} accounts?`, 'verify-email': `Mark ${n} emails as verified?` }[action];
+    if (action === 'delete') {
+      if (window.prompt(`Permanently delete ${n} accounts and all their data? Type DELETE to confirm.`) !== 'DELETE') return;
+    } else if (!window.confirm(ask)) return;
+    setBulkBusy(action);
+    try {
+      const { data } = await api.post('/admin/users/bulk', { action, ids: [...selected] });
+      toast.success(`Done for ${data.done}${data.failed.length ? `, ${data.failed.length} skipped (${data.failed[0].message})` : ''}`);
+      load();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    } finally {
+      setBulkBusy('');
+    }
+  };
+  const allOnPage = data?.users.length > 0 && data.users.every((u) => selected.has(u.id));
+  const exportKind = role === 'candidate' ? 'candidates' : role === 'company' ? 'companies' : null;
+
   return (
-    <AdminShell title={cfg.title} subtitle={cfg.subtitle}>
+    <AdminShell title={cfg.title} subtitle={cfg.subtitle} actions={exportKind && <ExportButton kind={exportKind} />}>
       <div className="glass mb-4 space-y-3 rounded-3xl p-4">
         <label className="relative block">
           <Search size={17} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-white/40" />
@@ -101,6 +172,17 @@ export default function AdminUsers({ role }) {
         </div>
       </div>
 
+      {selected.size > 0 && (
+        <div className="sticky top-16 z-20 mb-3 flex flex-wrap items-center gap-2 rounded-2xl bg-brand-500 px-4 py-2.5 text-sm text-[#fff] shadow-lg lg:top-3">
+          <b className="mr-2">{selected.size} selected</b>
+          {can('announce') && <button className="rounded-lg bg-[#fff]/15 px-3 py-1.5 font-semibold hover:bg-[#fff]/25" onClick={() => setNotify([...selected])}><Bell size={14} className="mr-1 inline" />Notify</button>}
+          {can('users.manage') && <button className="rounded-lg bg-[#fff]/15 px-3 py-1.5 font-semibold hover:bg-[#fff]/25" disabled={bulkBusy} onClick={() => bulk('suspend')}>Suspend</button>}
+          {can('users.manage') && <button className="rounded-lg bg-[#fff]/15 px-3 py-1.5 font-semibold hover:bg-[#fff]/25" disabled={bulkBusy} onClick={() => bulk('reinstate')}>Reinstate</button>}
+          {can('users.edit') && <button className="rounded-lg bg-[#fff]/15 px-3 py-1.5 font-semibold hover:bg-[#fff]/25" disabled={bulkBusy} onClick={() => bulk('verify-email')}>Mark email verified</button>}
+          {can('users.delete') && <button className="rounded-lg bg-red-600 px-3 py-1.5 font-semibold hover:bg-red-700" disabled={bulkBusy} onClick={() => bulk('delete')}>Delete</button>}
+          <button className="ml-auto font-semibold underline-offset-2 hover:underline" onClick={() => setSelected(new Set())}>Clear</button>
+        </div>
+      )}
       {!data ? (
         <Spinner className="py-20" />
       ) : !data.users.length ? (
@@ -112,6 +194,9 @@ export default function AdminUsers({ role }) {
               <table className="w-full min-w-[760px] text-left text-sm">
                 <thead className="border-b border-white/[0.08] text-[11px] uppercase tracking-[0.1em] text-white/45">
                   <tr>
+                    <th className="w-10 py-3 pl-4">
+                      <input type="checkbox" checked={allOnPage} onChange={() => setSelected(allOnPage ? new Set() : new Set(data.users.map((u) => u.id)))} className="size-4 accent-[#0f4d42]" aria-label="Select all on this page" />
+                    </th>
                     <th className="px-4 py-3 font-semibold">{role === 'company' ? 'Company' : 'Name'}</th>
                     {role === 'candidate' && (
                       <>
@@ -135,7 +220,10 @@ export default function AdminUsers({ role }) {
                 </thead>
                 <tbody className="divide-y divide-white/[0.06]">
                   {data.users.map((u) => (
-                    <tr key={u.id} onClick={() => setOpen(role === 'recruiter' ? u.id : u.id)} className="cursor-pointer transition-colors hover:bg-white/[0.03]">
+                    <tr key={u.id} onClick={() => setOpen(u.id)} className={cx('cursor-pointer transition-colors hover:bg-white/[0.03]', selected.has(u.id) && 'bg-brand-500/[0.05]')}>
+                      <td className="py-3 pl-4" onClick={(e) => e.stopPropagation()}>
+                        <input type="checkbox" checked={selected.has(u.id)} onChange={() => toggle(u.id)} className="size-4 accent-[#0f4d42]" aria-label={`Select ${u.name}`} />
+                      </td>
                       <td className="px-4 py-3">
                         <div className="flex items-center gap-3">
                           <Avatar src={u.avatarUrl} name={role === 'company' ? u.companyName || u.name : u.name} size="sm" company={role === 'company'} />
@@ -184,6 +272,7 @@ export default function AdminUsers({ role }) {
         </>
       )}
       <UserDetail id={open} onClose={() => setOpen(null)} onChanged={load} />
+      <NotifyModal ids={notify} onClose={(sent) => { setNotify(null); if (sent) setSelected(new Set()); }} />
     </AdminShell>
   );
 }

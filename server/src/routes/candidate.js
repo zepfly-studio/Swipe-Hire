@@ -91,7 +91,7 @@ router.post('/resume/autofill', resumeUpload, async (req, res) => {
   const url = await storeUpload(req.file);
   const profile = await CandidateProfile.findOneAndUpdate(
     { user: req.user.id },
-    { $set: { resumeUrl: url }, ...(prev?.step >= 1 && { $max: { step: 2 } }) },
+    { $set: { resumeUrl: url, mediaAt: new Date() }, $unset: { review: 1 }, ...(prev?.step >= 1 && { $max: { step: 2 } }) },
     { returnDocument: 'after' },
   ).lean();
   if (prev?.resumeUrl && prev.resumeUrl !== url) removeUpload(prev.resumeUrl);
@@ -109,7 +109,7 @@ async function saveUpload(req, field, requiredStep, nextStep) {
   const url = await storeUpload(req.file);
   const profile = await CandidateProfile.findOneAndUpdate(
     { user: req.user.id },
-    { $set: { [field]: url }, $max: { step: nextStep } },
+    { $set: { [field]: url, mediaAt: new Date() }, $unset: { review: 1 }, $max: { step: nextStep } },
     { returnDocument: 'after' },
   ).lean();
   if (prev[field] && prev[field] !== url) removeUpload(prev[field]);

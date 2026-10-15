@@ -2,14 +2,16 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, Pager, Pill } from './AdminShell';
+import AdminShell, { dateOf, ExportButton, Pager, Pill, useCan } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const FILTERS = [
   ['', '', 'All'],
   ['paid', '', 'Paid'],
   ['created', '', 'Not completed'],
+  ['refunded', '', 'Refunded'],
   ['', 'razorpay', 'Razorpay'],
+  ['', 'manual', 'Manual'],
   ['', 'demo', 'Demo'],
 ];
 
@@ -19,17 +21,34 @@ export default function AdminPayments() {
   const [data, setData] = useState(null);
   const [company, setCompany] = useState(null);
   const [status, mode] = FILTERS[filter];
+  const can = useCan();
 
-  useEffect(() => {
-    setData(null);
+  const load = () =>
     api
       .get('/admin/payments', { params: { status, mode, page } })
       .then(({ data }) => setData(data))
       .catch((err) => toast.error(errorMessage(err)));
+  useEffect(() => {
+    setData(null);
+    load();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, mode, page]);
 
+  const refund = async (p) => {
+    if (!window.confirm(`Mark ₹${p.amount} from ${p.company.name} as refunded?\n\nReturn the money yourself from the ${p.mode === 'razorpay' ? 'Razorpay dashboard' : 'bank / UPI'}.`)) return;
+    const removeSwipes = window.confirm(`Also take back the ${p.swipes} swipes from ${p.company.name}?`);
+    const note = window.prompt('Note (optional)', '') ?? '';
+    try {
+      await api.post(`/admin/payments/${p.id}/refund`, { removeSwipes, note });
+      toast.success('Marked as refunded');
+      load();
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
+  };
+
   return (
-    <AdminShell title="Payments" subtitle="Swipe-credit orders from every company. Demo orders are test purchases with no real money.">
+    <AdminShell title="Payments" subtitle="Swipe-credit orders from every company. Demo orders are test purchases with no real money. Manual payments are recorded from a company's page." actions={<ExportButton kind="payments" />}>
       <div className="mb-4 flex flex-wrap gap-2">
         {FILTERS.map((f, i) => (
           <button
@@ -62,6 +81,7 @@ export default function AdminPayments() {
                     <th className="px-4 py-3 text-right font-semibold">Swipes</th>
                     <th className="px-4 py-3 font-semibold">Status</th>
                     <th className="px-4 py-3 font-semibold">Order</th>
+                    <th />
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-white/[0.06]">
@@ -78,12 +98,20 @@ export default function AdminPayments() {
                       <td className="px-4 py-3 text-right tabular-nums">{p.swipes}</td>
                       <td className="px-4 py-3">
                         <span className="flex gap-1">
-                          <Pill tone={p.status === 'paid' ? 'green' : 'gray'}>{p.status === 'paid' ? 'Paid' : 'Not completed'}</Pill>
-                          {p.mode === 'demo' && <Pill tone="amber">Demo</Pill>}
+                          <Pill tone={p.status === 'paid' ? 'green' : p.status === 'refunded' ? 'red' : 'gray'}>{p.status === 'paid' ? 'Paid' : p.status === 'refunded' ? 'Refunded' : 'Not completed'}</Pill>
+                          {p.mode !== 'razorpay' && <Pill tone="amber">{p.mode}</Pill>}
+                          {p.couponCode && <Pill tone="blue">{p.couponCode}</Pill>}
                         </span>
                       </td>
                       <td className="max-w-[180px] truncate px-4 py-3 font-mono text-xs text-white/50" title={p.paymentId || p.orderId}>
                         {p.paymentId || p.orderId}
+                      </td>
+                      <td className="px-4 py-3 text-right">
+                        {p.status === 'paid' && can('credits') && (
+                          <button className="rounded-lg px-2 py-1 text-xs font-semibold text-danger hover:bg-red-500/10" onClick={() => refund(p)}>
+                            Refund
+                          </button>
+                        )}
                       </td>
                     </tr>
                   ))}

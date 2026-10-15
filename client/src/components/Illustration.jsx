@@ -13,6 +13,9 @@ import {
   Video,
   WifiOff,
   Zap,
+  Wrench,
+  LifeBuoy,
+  Flag,
 } from 'lucide-react';
 import { cx } from '../lib/api';
 
@@ -33,6 +36,9 @@ const ICONS = {
   verified: ShieldCheck,
   'no-interviews': CalendarClock,
   'no-messages': MessageCircle,
+  maintenance: Wrench,
+  support: LifeBuoy,
+  reports: Flag,
 };
 
 // Success states get a solid brand tile; everything else a light one.

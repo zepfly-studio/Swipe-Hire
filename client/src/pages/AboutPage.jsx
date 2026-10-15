@@ -6,6 +6,7 @@ import {
 } from 'lucide-react';
 import Background from '../components/Background';
 import Logo from '../components/Logo';
+import { useSite } from '../lib/site';
 
 const fade = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-60px' }, transition: { duration: 0.45 } };
 
@@ -100,6 +101,7 @@ function Steps({ steps }) {
 
 // Public "About" page: what Glide Recruit is, why it exists and how it works.
 export default function AboutPage() {
+  const intro = useSite().content.aboutIntro;
   return (
     <div className="relative min-h-dvh overflow-x-clip">
       <Background />
@@ -129,10 +131,9 @@ export default function AboutPage() {
             <h1 className="mt-4 text-4xl font-extrabold leading-[1.08] tracking-tight sm:text-5xl">
               Hiring that moves at the <span className="text-gradient">speed of a swipe.</span>
             </h1>
-            <p className="mx-auto mt-6 max-w-2xl text-lg text-white/60">
-              Glide Recruit is an Indian hiring platform that connects companies with job seekers through short, honest profiles: a resume and a
-              15-second intro video. Companies swipe through candidates to shortlist the right people in minutes, and job seekers get discovered
-              without sending a hundred applications.
+            <p className="mx-auto mt-6 max-w-2xl whitespace-pre-line text-lg text-white/60">
+              {intro ||
+                'Glide Recruit is an Indian hiring platform that connects companies with job seekers through short, honest profiles: a resume and a 15-second intro video. Companies swipe through candidates to shortlist the right people in minutes, and job seekers get discovered without sending a hundred applications.'}
             </p>
           </motion.div>
           <div className="mx-auto mt-10 grid max-w-3xl grid-cols-2 gap-3 sm:grid-cols-4">

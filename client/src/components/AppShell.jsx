@@ -3,7 +3,7 @@ import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
   BadgeCheck, Briefcase, Building2, CalendarClock, ClipboardList, Crown, Heart, House, Layers, LogOut, MessageCircle, Pencil, ShieldCheck,
-  SlidersHorizontal, UserCog, UserPlus, Users, Zap,
+  LifeBuoy, SlidersHorizontal, UserCog, UserPlus, Users, Zap,
 } from 'lucide-react';
 import Background from './Background';
 import Logo from './Logo';
@@ -87,10 +87,12 @@ function ProfileMenu() {
         { to: '/company/team', label: 'Team', icon: UserPlus },
         { to: '/company/verify', label: profile?.verification?.status === 'verified' ? 'Verified company' : 'Get verified badge', icon: BadgeCheck },
         { to: '/company/plans', label: 'Plans & swipes', icon: Crown },
+        { to: '/support', label: 'Help & support', icon: LifeBuoy },
       ]
     : [
         { to: '/settings', label: 'Account settings', icon: UserCog },
         { to: '/candidate/onboarding?edit', label: 'Edit profile', icon: Pencil },
+        { to: '/support', label: 'Help & support', icon: LifeBuoy },
       ];
   if (user.isAdmin) items.push({ to: '/admin', label: 'Admin', icon: ShieldCheck });
 

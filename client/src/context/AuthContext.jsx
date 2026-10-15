@@ -7,6 +7,8 @@ const AuthContext = createContext(null);
 export function homePath(user, profile) {
   if (!user) return '/auth';
   if (user.emailVerified === false) return '/verify-email';
+  // Admin-only logins have no candidate/company profile.
+  if (user.isAdmin && !profile) return '/admin';
   if (user.role === 'candidate') return profile?.step >= 3 ? '/candidate' : '/candidate/onboarding';
   return profile?.completed ? '/company/swipe' : '/company/onboarding';
 }

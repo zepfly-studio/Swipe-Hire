@@ -128,9 +128,9 @@ export default function AdminOverview() {
             <Tile
               icon={ShieldAlert}
               label="Needs attention"
-              value={s.companies.pendingVerification}
-              sub={`verification requests · ${s.users.suspended} suspended · ${s.users.unverifiedEmails} unverified emails`}
-              to="/admin/verifications"
+              value={Object.values(s.queues).reduce((a, b) => a + b, 0)}
+              sub={`${s.queues.reports} reports · ${s.queues.tickets} support · ${s.queues.jobs} jobs · ${s.queues.verifications} verifications`}
+              to={s.queues.reports ? '/admin/reports' : s.queues.tickets ? '/admin/tickets' : '/admin/verifications'}
               tone="amber"
             />
           </div>

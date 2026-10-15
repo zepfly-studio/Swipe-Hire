@@ -156,11 +156,12 @@ router.delete('/messages/:id', perm('chats'), async (req, res) => {
 // ======================= resume & video review =======================
 router.get('/review', perm('review'), async (req, res) => {
   const p = page(req.query);
-  const status = ['approved', 'rejected'].includes(req.query.status) ? req.query.status : 'pending';
-  const where = { step: 3, 'review.status': status === 'pending' ? { $exists: false } : status };
+  // live = everything currently shown to companies (uploads are live at once); removed = taken down by an admin.
+  const removed = req.query.status === 'removed';
+  const where = removed ? { 'review.status': 'rejected' } : { step: 3, 'review.status': { $ne: 'rejected' } };
   const [total, list] = await Promise.all([
     CandidateProfile.countDocuments(where),
-    CandidateProfile.find(where).sort({ updatedAt: -1 }).skip((p - 1) * PAGE_SIZE).limit(PAGE_SIZE).populate('user', 'name email').lean(),
+    CandidateProfile.find(where).sort(removed ? { 'review.at': -1 } : { mediaAt: -1, updatedAt: -1 }).skip((p - 1) * PAGE_SIZE).limit(PAGE_SIZE).populate('user', 'name email').lean(),
   ]);
   res.json({
     ...paged(total, p),
@@ -168,7 +169,7 @@ router.get('/review', perm('review'), async (req, res) => {
       .filter((c) => c.user)
       .map((c) => {
         const s = withSignedFiles(c);
-        return { id: String(c.user._id), name: c.user.name, email: c.user.email, headline: c.headline, location: c.location, resumeUrl: s.resumeUrl, videoUrl: s.videoUrl, review: c.review || null, updatedAt: c.updatedAt };
+        return { id: String(c.user._id), name: c.user.name, email: c.user.email, headline: c.headline, location: c.location, resumeUrl: s.resumeUrl, videoUrl: s.videoUrl, review: c.review || null, uploadedAt: c.mediaAt || c.updatedAt };
       }),
   });
 });

@@ -85,10 +85,10 @@ router.get('/stats', perm('view'), async (_req, res) => {
     candidates: signups.find((s) => s._id.day === day && s._id.role === 'candidate')?.n || 0,
     companies: signups.find((s) => s._id.day === day && s._id.role === 'company')?.n || 0,
   }));
-  const [openReports, openTickets, pendingReview, pendingJobs] = await Promise.all([
+  const [openReports, openTickets, newUploads, pendingJobs] = await Promise.all([
     Report.countDocuments({ status: 'open' }),
     Ticket.countDocuments({ status: 'open' }),
-    CandidateProfile.countDocuments({ step: 3, 'review.status': { $exists: false } }),
+    CandidateProfile.countDocuments({ step: 3, mediaAt: { $gte: daysAgo(1) } }),
     Job.countDocuments({ approved: false }),
   ]);
   const recent = await User.find(people).sort({ createdAt: -1 }).limit(8).select('name email role companyId createdAt suspended').lean();
@@ -101,7 +101,8 @@ router.get('/stats', perm('view'), async (_req, res) => {
     // Amounts are stored in rupees (see routes/payment.js).
     revenue: { paid: pay('razorpay'), demo: pay('demo') },
     signupsByDay,
-    queues: { reports: openReports, tickets: openTickets, review: pendingReview, jobs: pendingJobs, verifications: pendingVerifications },
+    queues: { reports: openReports, tickets: openTickets, jobs: pendingJobs, verifications: pendingVerifications },
+    newUploads,
     recent: recent.map((u) => ({ id: String(u._id), name: u.name, email: u.email, role: u.companyId ? 'recruiter' : u.role, createdAt: u.createdAt, suspended: !!u.suspended })),
   });
 });

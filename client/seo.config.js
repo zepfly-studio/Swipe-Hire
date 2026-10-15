@@ -9,7 +9,7 @@ export const PUBLIC_PAGES = [
 ];
 
 // Logged-in areas: no value in search results, and they only show a login redirect.
-const PRIVATE_PREFIXES = ['/api/', '/uploads/', '/candidate', '/company/', '/messages', '/interviews', '/tasks', '/settings', '/admin', '/join', '/verify-email'];
+const PRIVATE_PREFIXES = ['/api/', '/uploads/', '/candidate', '/company/', '/messages', '/interviews', '/tasks', '/settings', '/admin', '/support', '/join', '/verify-email'];
 
 export function seoFiles(siteUrl) {
   const today = new Date().toISOString().slice(0, 10);
