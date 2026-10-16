@@ -142,22 +142,27 @@ export function hasFilters(f = {}) {
 
 // Location: "All India" = everywhere; a state ("Rajasthan") also covers its cities
 // (Jaipur, Sikar, Kota…); a city matches where they live or the cities they're open to.
-function locationWhere(location) {
+const areaRegex = (location) => {
   const state = stateKey(location);
-  const rx = state
+  return state
     ? new RegExp(`(^|[^a-z])(${[state, ...STATE_CITIES[state]].map(escapeRegex).join('|')})($|[^a-z])`, 'i')
     : new RegExp(escapeRegex(location), 'i');
+};
+function locationWhere(location) {
+  const rx = areaRegex(location);
   return { $or: [{ location: rx }, { preferredLocations: rx }] };
 }
 
-// Swipe feed: only role and location decide who is shown. Experience, salary, notice,
-// skills and work mode decide the order (see filterScore), so nobody is hidden by them.
+// Swipe feed: role, location and "already earns more than the budget" decide who is shown.
+// Experience, expected salary, notice, skills and work mode decide the order (see filterScore).
 export function feedFilters(q) {
   const f = normalizeFilters(q);
   const and = [];
   if (f.location && f.location !== ALL_INDIA) and.push(locationWhere(f.location));
   const roles = splitTerms(f.role);
   if (roles.length) and.push({ $or: roles.map(roleWhere) });
+  // Someone already earning more than the budget won't take the job, so they aren't shown.
+  if (f.maxSalary !== null) and.push({ $or: [{ currentSalary: null }, { currentSalary: { $lte: f.maxSalary } }] });
   return and.length ? { $and: and } : {};
 }
 
@@ -172,6 +177,57 @@ export function feedFilters(q) {
 // - work mode: the one asked 1, no preference 0.8, other 0.2
 const WEIGHTS = { role: 15, experience: 25, skills: 30, notice: 15, salary: 20, workMode: 10 };
 const NOTICE_VALUE = { Immediate: 1, '15 days': 0.85, '30 days': 0.65, '60 days': 0.4, '90 days': 0.15 };
+// Filter by filter, does this candidate fit? Shown on the swipe card so the company sees at a
+// glance what doesn't match (e.g. "Lives in Nagpur", "Asks ₹11.6 LPA, budget ₹3–5").
+const lpa = (v) => `₹${v} LPA`;
+const range = (lo, hi, unit) => (lo != null && hi != null ? `${lo}–${hi}${unit}` : lo != null ? `${lo}+${unit}` : `up to ${hi}${unit}`);
+export function filterFit(p, q) {
+  const f = normalizeFilters(q);
+  const fit = [];
+  if (f.location && f.location !== ALL_INDIA) {
+    const rx = areaRegex(f.location);
+    const lives = rx.test(p.location || '');
+    const open = (p.preferredLocations || []).filter((c) => rx.test(c));
+    fit.push({ key: 'location', ok: lives, text: lives ? `Lives in ${p.location}` : `Lives in ${p.location || 'another city'}, not ${f.location}${open.length ? ` (open to ${open.join(', ')})` : ''}` });
+  }
+  if (f.minExp !== null || f.maxExp !== null) {
+    const y = p.experienceYears ?? 0;
+    const ok = (f.minExp === null || y >= f.minExp) && (f.maxExp === null || y <= f.maxExp);
+    fit.push({ key: 'experience', ok, text: `${y === 0 ? 'Fresher' : `${y} yrs experience`}${ok ? '' : `, you want ${range(f.minExp, f.maxExp, ' yrs')}`}` });
+  }
+  if (f.minSalary !== null || f.maxSalary !== null) {
+    const s = p.expectedSalary;
+    const asks = p.expectedSalaryMax ? `₹${s}–${p.expectedSalaryMax} LPA` : lpa(s);
+    const inBudget = s == null || ((f.minSalary === null || s >= f.minSalary) && (f.maxSalary === null || s <= f.maxSalary));
+    const earnsMore = f.maxSalary !== null && p.currentSalary != null && p.currentSalary > f.maxSalary;
+    const ok = inBudget && !earnsMore;
+    const budget = `budget ₹${range(f.minSalary, f.maxSalary, ' LPA')}`;
+    fit.push({
+      key: 'salary',
+      ok,
+      text: ok ? `Asks ${asks}` : earnsMore && inBudget ? `Already earns ${lpa(p.currentSalary)}, ${budget}` : `Asks ${asks}${p.salaryNegotiable ? ' (negotiable)' : ''}, ${budget}`,
+    });
+  }
+  if (f.notice.length) {
+    const longest = Math.max(...f.notice.map((n) => NOTICE_OPTIONS.indexOf(n)));
+    const at = NOTICE_OPTIONS.indexOf(p.noticePeriod);
+    const ok = at === -1 || at <= longest;
+    fit.push({ key: 'notice', ok, text: p.noticePeriod ? `${p.noticePeriod === 'Immediate' ? 'Joins immediately' : `${p.noticePeriod} notice`}${ok ? '' : `, you want ${NOTICE_OPTIONS[longest].toLowerCase()}`}` : 'Notice period not given' });
+  }
+  if (f.workMode) {
+    const modes = p.workModes || [];
+    const ok = !modes.length || modes.includes(f.workMode);
+    const name = (m) => ({ onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' })[m];
+    fit.push({ key: 'workMode', ok, text: ok ? `${modes.length ? name(f.workMode) : 'Any work mode'}` : `Wants ${modes.map(name).join(' / ')}, not ${name(f.workMode)}` });
+  }
+  if (f.skills.length) {
+    const have = new Set((p.skills || []).map((x) => x.toLowerCase()));
+    const n = f.skills.filter((x) => have.has(x.toLowerCase())).length;
+    fit.push({ key: 'skills', ok: n > 0, text: `Has ${n} of ${f.skills.length} skills you want` });
+  }
+  return fit;
+}
+
 export function filterScore(p, q) {
   const f = normalizeFilters(q);
   const parts = [];
