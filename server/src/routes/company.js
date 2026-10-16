@@ -193,7 +193,7 @@ router.post('/swipe', async (req, res) => {
   if (action === 'right' && !salaryFits(candidate, job)) {
     throw new HttpError(
       409,
-      `${candidate.user.name.split(' ')[0]} expects at least ₹${candidate.expectedSalary} LPA, too far above your budget of ₹${job.salaryMax} LPA.`,
+      `${candidate.user.name.split(' ')[0]}'s salary expectation (or current salary) is above your budget of ₹${job.salaryMax} LPA.`,
       { code: 'SALARY_MISMATCH' },
     );
   }

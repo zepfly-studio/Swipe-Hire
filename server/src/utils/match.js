@@ -3,9 +3,12 @@
 export const NEGOTIATE_MARGIN = 1.2;
 
 // The company's budget must reach the candidate's minimum; a candidate open to negotiate
-// may ask up to 20% more. Jobs without a budget, or candidates without an expectation, always fit.
+// may ask up to 20% more. Nobody already earning more than the budget fits (it would be a
+// pay cut). Jobs without a budget, or candidates without an expectation, always fit.
 export function salaryFits(candidate, job) {
-  if (!job.salaryMax || candidate.expectedSalary == null) return true;
+  if (!job.salaryMax) return true;
+  if (candidate.currentSalary != null && candidate.currentSalary > job.salaryMax) return false;
+  if (candidate.expectedSalary == null) return true;
   const limit = candidate.salaryNegotiable ? job.salaryMax * NEGOTIATE_MARGIN : job.salaryMax;
   return candidate.expectedSalary <= limit;
 }
@@ -14,10 +17,15 @@ export function salaryFits(candidate, job) {
 export function salaryFitWhere(job) {
   if (!job.salaryMax) return {};
   return {
-    $or: [
-      { expectedSalary: null },
-      { expectedSalary: { $lte: job.salaryMax } },
-      { salaryNegotiable: true, expectedSalary: { $lte: job.salaryMax * NEGOTIATE_MARGIN } },
+    $and: [
+      { $or: [{ currentSalary: null }, { currentSalary: { $lte: job.salaryMax } }] },
+      {
+        $or: [
+          { expectedSalary: null },
+          { expectedSalary: { $lte: job.salaryMax } },
+          { salaryNegotiable: true, expectedSalary: { $lte: job.salaryMax * NEGOTIATE_MARGIN } },
+        ],
+      },
     ],
   };
 }

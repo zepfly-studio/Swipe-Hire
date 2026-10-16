@@ -117,8 +117,10 @@ export function feedFilters(q) {
     if (f.maxExp !== null) where.experienceYears.$lte = f.maxExp;
   }
   // "Max salary": the candidate's range must start at or below it (a 4–6 LPA candidate
-  // matches "max 5"); someone open to negotiate may start up to 20% above it.
+  // matches "max 5"); someone open to negotiate may start up to 20% above it. People
+  // already earning more than the max are left out (they won't take a pay cut).
   if (f.maxSalary !== null) {
+    and.push({ $or: [{ currentSalary: null }, { currentSalary: { $lte: f.maxSalary } }] });
     and.push({
       $or: [
         { expectedSalary: { $lte: f.maxSalary } },
