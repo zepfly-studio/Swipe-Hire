@@ -1,6 +1,6 @@
 import { useRef } from 'react';
 import { motion, animate, useDragControls, useIsPresent, useMotionValue, useTransform } from 'framer-motion';
-import { Briefcase, Check, ChevronsDown, Heart, IndianRupee, Maximize2, MapPin, X } from 'lucide-react';
+import { Briefcase, ChevronsDown, Heart, IndianRupee, Maximize2, MapPin } from 'lucide-react';
 import { PdfFirstPage } from './Pdf';
 import Avatar from './Avatar';
 import { CandidateDetails, IntroVideo, MatchBadge, SectionTitle, expLabel, expectedSalaryLabel } from './CandidateDetails';
@@ -61,10 +61,6 @@ export default function SwipeCard({ c, depth, onSwipe, onOpenResume, onToggleWis
     }
   };
 
-  // Filter by filter: does this person fit? Mismatches turn their chip red.
-  const miss = new Set((c.fit || []).filter((x) => !x.ok).map((x) => x.key));
-  const chip = (key) => cx('chip', miss.has(key) && 'bg-red-500/10 text-danger ring-1 ring-red-500/30');
-
   return (
     <motion.div
       className={cx(
@@ -120,19 +116,19 @@ export default function SwipeCard({ c, depth, onSwipe, onOpenResume, onToggleWis
           <div className="mt-3 flex flex-wrap items-center gap-2">
             <MatchBadge score={c.matchScore} />
             {c.location && (
-              <span className={chip('location')}>
+              <span className="chip">
                 <MapPin size={12} />
                 {c.location}
               </span>
             )}
             {c.experienceYears != null && (
-              <span className={chip('experience')}>
+              <span className="chip">
                 <Briefcase size={12} />
                 {expLabel(c.experienceYears)}
               </span>
             )}
             {c.expectedSalary != null && (
-              <span className={chip('salary')}>
+              <span className="chip">
                 <IndianRupee size={12} />
                 {expectedSalaryLabel(c).replace('₹', '')}
               </span>
@@ -156,25 +152,6 @@ export default function SwipeCard({ c, depth, onSwipe, onOpenResume, onToggleWis
 
         {/* Order: skills and details first, then the intro video, then the resume. */}
         <div className="space-y-7 p-4 pb-8">
-          {isTop && c.fit?.length > 0 && (
-            <section>
-              <SectionTitle>Your filters</SectionTitle>
-              <ul className="space-y-1.5">
-                {c.fit.map((x) => (
-                  <li
-                    key={x.key}
-                    className={cx(
-                      'flex items-start gap-2 rounded-xl px-3 py-2 text-sm font-medium',
-                      x.ok ? 'bg-emerald-400/10 text-emerald-300' : 'bg-red-500/10 text-danger',
-                    )}
-                  >
-                    {x.ok ? <Check size={16} className="mt-0.5 shrink-0" /> : <X size={16} className="mt-0.5 shrink-0" />}
-                    <span>{x.text}</span>
-                  </li>
-                ))}
-              </ul>
-            </section>
-          )}
           {isTop && (
             <>
               <CandidateDetails c={c} showVideo={false} />

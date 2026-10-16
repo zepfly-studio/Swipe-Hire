@@ -18,7 +18,7 @@ import { withSignedFiles } from '../utils/signedUrl.js';
 import { num, text, requireFields, stripUndefined } from '../utils/fields.js';
 import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { storeUpload } from '../utils/storage.js';
-import { fallbackFilters, feedFilters, filterFit, filterScore, hasFilters, normalizeFilters, strictFilters, toCard } from '../utils/candidates.js';
+import { fallbackFilters, feedFilters, filterScore, hasFilters, normalizeFilters, strictFilters, toCard } from '../utils/candidates.js';
 import { feedRank } from '../utils/activity.js';
 import { publicJob, resolveFilterJob, resolveJob } from '../utils/jobs.js';
 import { notify } from '../utils/notify.js';
@@ -172,7 +172,6 @@ router.get('/feed', async (req, res) => {
         const card = toCard(p, job, { wishlisted: wish.has(String(p.user._id)), ...extra });
         const score = filterScore(p, req.query);
         if (score !== null) card.matchScore = score;
-        card.fit = filterFit(p, req.query);
         return { card, rank: feedRank(p, card.matchScore, now) };
       })
       .sort((a, b) => b.card.matchScore - a.card.matchScore || a.rank.stale - b.rank.stale || b.rank.score - a.rank.score)
