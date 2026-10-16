@@ -6,7 +6,8 @@ import {
   Layers, Lock, MessageCircle, Sparkles, Users, Video, X,
 } from 'lucide-react';
 import Background from '../components/Background';
-import Logo, { LogoMark } from '../components/Logo';
+import PublicHeader from '../components/PublicHeader';
+import Logo from '../components/Logo';
 import { api, cx } from '../lib/api';
 import { addJsonLd } from '../lib/seo';
 import { DEFAULT_FAQ } from '../lib/faq';
@@ -173,6 +174,11 @@ function HeroCard() {
 
 // Public home page: what search engines and new visitors see.
 export default function LandingPage() {
+  // Opened from another page's menu (e.g. /#pricing): jump to that section.
+  useEffect(() => {
+    const id = window.location.hash.slice(1);
+    if (id) setTimeout(() => document.getElementById(id)?.scrollIntoView({ behavior: 'smooth' }), 100);
+  }, []);
   // Admins can replace the built-in FAQ (Admin → Content & lists).
   const FAQ = useSite().content.faq || DEFAULT_FAQ;
   useEffect(
@@ -189,49 +195,7 @@ export default function LandingPage() {
     <div className="relative min-h-dvh overflow-x-clip">
       <Background />
 
-      {/* Floating header: a rounded bar that stays a little below the top edge. */}
-      <header className="sticky top-3 z-40 px-3 sm:top-4 sm:px-4">
-        <nav
-          className="mx-auto flex h-16 max-w-6xl items-center gap-3 rounded-[20px] border border-white/10 bg-ink-900/80 px-3 shadow-xl shadow-black/10 backdrop-blur-xl sm:px-4"
-          aria-label="Main"
-        >
-          <Link to="/" aria-label="Glide Recruit home">
-            <Logo />
-          </Link>
-          <div className="ml-6 hidden items-center gap-1 text-sm font-semibold text-white/60 lg:flex">
-            {[
-              ['#how-it-works', 'How it works'],
-              ['#for-companies', 'For companies'],
-              ['#for-candidates', 'For job seekers'],
-              ['#pricing', 'Pricing'],
-              ['#faq', 'FAQ'],
-              ['/about', 'About'],
-            ].map(([href, label]) => (
-              <a key={href} href={href} className="rounded-xl px-3 py-2 hover:bg-white/5 hover:text-white">
-                {label}
-              </a>
-            ))}
-          </div>
-          <div className="ml-auto flex items-center gap-2">
-            <Link to="/auth?mode=login" className="btn-ghost px-4 py-2 text-sm">
-              Log in
-            </Link>
-            {/* The logo tile slides to the other end on hover while the label slides back. */}
-            <Link
-              to="/auth"
-              className="btn-primary group relative hidden h-11 rounded-2xl py-0 pl-[3.25rem] pr-4 text-sm transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] hover:pl-4 hover:pr-[3.25rem] sm:inline-flex"
-            >
-              <span
-                className="absolute inset-y-1 left-1 grid aspect-square place-items-center rounded-[12px] bg-[#fff] transition-all duration-500 ease-[cubic-bezier(0.4,0,0.2,1)] group-hover:left-[calc(100%-2.5rem)]"
-                aria-hidden="true"
-              >
-                <LogoMark className="size-7" />
-              </span>
-              Get started
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <PublicHeader />
 
       <main>
         {/* Hero */}

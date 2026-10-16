@@ -5,6 +5,7 @@ import {
   Layers, Lock, MessageCircle, Search, ShieldCheck, Sparkles, Target, UserCheck, Users, Video,
 } from 'lucide-react';
 import Background from '../components/Background';
+import PublicHeader from '../components/PublicHeader';
 import Logo from '../components/Logo';
 import { useSite } from '../lib/site';
 
@@ -105,24 +106,7 @@ export default function AboutPage() {
   return (
     <div className="relative min-h-dvh overflow-x-clip">
       <Background />
-      <header className="sticky top-3 z-40 px-3 sm:top-4 sm:px-4">
-        <nav className="mx-auto flex h-16 max-w-6xl items-center gap-3 rounded-[20px] border border-white/10 bg-ink-900/80 px-3 shadow-xl shadow-black/10 backdrop-blur-xl sm:px-4" aria-label="Main">
-          <Link to="/" aria-label="Glide Recruit home">
-            <Logo />
-          </Link>
-          <div className="ml-auto flex items-center gap-2">
-            <Link to="/" className="hidden rounded-xl px-3 py-2 text-sm font-semibold text-white/60 hover:bg-white/5 hover:text-white sm:inline-flex">
-              Home
-            </Link>
-            <Link to="/auth?mode=login" className="btn-ghost px-4 py-2 text-sm">
-              Log in
-            </Link>
-            <Link to="/auth" className="btn-primary hidden px-4 py-2 text-sm sm:inline-flex">
-              Get started
-            </Link>
-          </div>
-        </nav>
-      </header>
+      <PublicHeader />
 
       <main>
         <section className="mx-auto max-w-4xl px-4 pb-6 pt-16 text-center">
