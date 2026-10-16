@@ -6,7 +6,7 @@ import { searchOptions } from '../lib/suggestions';
 
 // Text input that suggests matching options while typing; free text is still allowed.
 // `search` (optional) replaces the default matching, e.g. for locations.
-export default function Autocomplete({ value, onChange, options, icon, placeholder, search }) {
+export default function Autocomplete({ value, onChange, options, icon, placeholder, search, maxLength }) {
   const [open, setOpen] = useState(false);
   const [active, setActive] = useState(-1);
 
@@ -30,6 +30,7 @@ export default function Autocomplete({ value, onChange, options, icon, placehold
         icon={icon}
         value={value}
         placeholder={placeholder}
+        maxLength={maxLength}
         autoComplete="off"
         onChange={(e) => {
           onChange(e.target.value);

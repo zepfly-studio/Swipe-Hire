@@ -38,11 +38,11 @@ const AdminUsers = lazy(() => import('./pages/admin/AdminUsers'));
 const AdminJobs = lazy(() => import('./pages/admin/AdminJobs'));
 const AdminPayments = lazy(() => import('./pages/admin/AdminPayments'));
 const AdminVerifications = lazy(() => import('./pages/admin/AdminVerifications'));
-const JobsPage = lazy(() => import('./pages/company/JobsPage'));
 const TeamPage = lazy(() => import('./pages/company/TeamPage'));
 const JoinPage = lazy(() => import('./pages/JoinPage'));
 const SettingsPage = lazy(() => import('./pages/SettingsPage'));
 const CompanyProfilePage = lazy(() => import('./pages/company/CompanyProfilePage'));
+const CompanyFiltersPage = lazy(() => import('./pages/company/CompanyFiltersPage'));
 const NotFoundPage = lazy(() => import('./pages/NotFoundPage'));
 const VerifyEmailPage = lazy(() => import('./pages/VerifyEmailPage'));
 
@@ -148,10 +148,11 @@ export default function App() {
 
         <Route path="/company/onboarding" element={<Guard role="company"><Page><CompanyOnboarding /></Page></Guard>} />
         <Route path="/company/swipe" element={<Guard role="company" onboarded><Page><SwipePage /></Page></Guard>} />
+        <Route path="/company/filters" element={<Guard role="company" onboarded><Page><CompanyFiltersPage /></Page></Guard>} />
         <Route path="/company/wishlist" element={<Guard role="company" onboarded><Page><CandidateListPage kind="wishlist" /></Page></Guard>} />
         <Route path="/company/shortlisted" element={<Guard role="company" onboarded><Page><CandidateListPage kind="shortlisted" /></Page></Guard>} />
         <Route path="/company/plans" element={<Guard role="company" onboarded><Page><PlansPage /></Page></Guard>} />
-        <Route path="/company/jobs" element={<Guard role="company" onboarded><Page><JobsPage /></Page></Guard>} />
+        <Route path="/company/jobs" element={<Guard role="company" onboarded><Navigate to="/company/swipe" replace /></Guard>} />
         <Route path="/company/profile" element={<Guard role="company" onboarded><Page><CompanyProfilePage /></Page></Guard>} />
         <Route path="/settings" element={<Guard onboarded><Page><SettingsPage /></Page></Guard>} />
         <Route path="/company/team" element={<Guard role="company" onboarded><Page><TeamPage /></Page></Guard>} />

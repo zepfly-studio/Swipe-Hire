@@ -4,6 +4,7 @@ import { HttpError } from './HttpError.js';
 import { cleanList } from './pick.js';
 import { num, salary, text, requireFields, stripUndefined } from './fields.js';
 import { requireJobApproval } from './settings.js';
+import { ALL_INDIA, normalizeFilters } from './candidates.js';
 
 export const WORK_MODES = ['onsite', 'remote', 'hybrid'];
 export const JOB_TYPES = ['full-time', 'part-time', 'internship', 'contract'];
@@ -16,11 +17,46 @@ export async function resolveJob(companyId, jobId) {
     if (!job) throw new HttpError(404, 'Job not found');
     return job;
   }
-  const job =
+  // Companies no longer post jobs, so with nothing yet use a general "Candidate search".
+  return (
     (await Job.findOne({ company: companyId, status: 'open' }).sort({ createdAt: 1 }).lean()) ||
-    (await Job.findOne({ company: companyId }).sort({ createdAt: 1 }).lean());
-  if (!job) throw new HttpError(403, 'Please add a job you are hiring for first', { code: 'NO_JOB' });
-  return job;
+    (await Job.findOne({ company: companyId }).sort({ createdAt: 1 }).lean()) ||
+    resolveFilterJob(companyId, {})
+  );
+}
+
+// Each distinct set of swipe filters is kept as a hidden "search" job, so shortlists, match
+// scores and the pipeline keep working without the company posting jobs.
+export async function resolveFilterJob(companyId, input, retry = true) {
+  const filters = normalizeFilters(input);
+  const searchKey = JSON.stringify(filters);
+  const title = filters.role || filters.skills.slice(0, 3).join(', ') || 'Candidate search';
+  try {
+    return await Job.findOneAndUpdate(
+      { company: companyId, internalSearch: true, searchKey },
+      {
+        $setOnInsert: {
+          company: companyId,
+          internalSearch: true,
+          searchKey,
+          title: title.slice(0, 80),
+          requiredSkills: filters.skills,
+          minExperience: filters.minExp,
+          maxExperience: filters.maxExp,
+          salaryMin: filters.minSalary,
+          salaryMax: filters.maxSalary,
+          jobLocation: filters.location === ALL_INDIA ? '' : filters.location,
+          workMode: filters.workMode || 'onsite',
+          status: 'open',
+        },
+      },
+      { upsert: true, returnDocument: 'after' },
+    ).lean();
+  } catch (err) {
+    // Two requests created the same search job at once; the other one won, so use it.
+    if (err.code === 11000 && retry) return resolveFilterJob(companyId, input, false);
+    throw err;
+  }
 }
 
 // Validates job input. Accepts the old onboarding names (hiringFor) too.

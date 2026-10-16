@@ -18,12 +18,19 @@ const jobSchema = new mongoose.Schema(
     description: { type: String, maxlength: 3000 },
     status: { type: String, enum: ['open', 'paused', 'closed'], default: 'open' },
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
+    internalSearch: { type: Boolean, default: false },
+    searchKey: String,
     // false = waiting for admin approval (only when the site requires it); unset = approved.
     approved: Boolean,
     // Marked by an admin as suspicious (spam / fake); shown in the admin panel.
     flagged: { reason: String, at: Date },
   },
   { timestamps: true },
+);
+
+jobSchema.index(
+  { company: 1, searchKey: 1 },
+  { unique: true, partialFilterExpression: { internalSearch: true } },
 );
 
 export const Job = mongoose.model('Job', jobSchema);

@@ -51,7 +51,7 @@ const FEATURES = [
       [MessageCircle, 'Built-in chat', 'Talk to shortlisted candidates without sharing personal numbers first.'],
       [ClipboardList, 'Take-home tasks', 'Send a brief with a deadline; candidates submit a live link and GitHub repo.'],
       [CalendarClock, 'Interview scheduling', 'Offer up to three slots; a video-call link is created automatically.'],
-      [Briefcase, 'Multiple jobs', 'Hire for several roles at once, each with its own requirements and pipeline.'],
+      [Briefcase, 'Targeted candidate filters', 'Set the role, skills, experience, salary, location and work mode before opening candidate resumes.'],
       [Users, 'Team accounts', 'Up to 10 recruiters share one company account.'],
     ],
   },

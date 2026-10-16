@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BadgeCheck, Bookmark, Briefcase, ChevronDown, Crown, Heart, Mail, Plus, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
+import { BadgeCheck, Bookmark, Briefcase, ChevronDown, Crown, Heart, Mail, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CompanyShell from '../../components/CompanyShell';
 import SwipeCard from '../../components/SwipeCard';
@@ -12,18 +12,21 @@ import FeedFilters, { EMPTY_FILTERS, countFilters, filterParams, fromSaved } fro
 import { Burst, Spinner } from '../../components/ui';
 import Illustration from '../../components/Illustration';
 import { useAuth } from '../../context/AuthContext';
-import { api, cx, errorMessage } from '../../lib/api';
+import { api, cx, errorMessage, toLpa } from '../../lib/api';
 
-const readKey = (k) => {
+// The last applied filters are remembered per company in this browser, so a refresh
+// (or coming back from another page) doesn't empty the swipe screen.
+const readSaved = (key) => {
   try {
-    return JSON.parse(localStorage.getItem(k));
+    const saved = JSON.parse(localStorage.getItem(key));
+    return saved?.filters ? { filters: { ...EMPTY_FILTERS, ...saved.filters }, searchId: saved.searchId || '' } : null;
   } catch {
     return null;
   }
 };
-const writeKey = (k, v) => {
+const writeSaved = (key, value) => {
   try {
-    localStorage.setItem(k, JSON.stringify(v));
+    localStorage.setItem(key, JSON.stringify(value));
   } catch {
     // ignore: only a convenience
   }
@@ -80,22 +83,25 @@ function ShortlistFlash({ flash }) {
   );
 }
 
-function Sidebar({ job }) {
-  if (!job) return <aside className="hidden w-72 shrink-0 lg:block" />;
+function Sidebar({ filters, onEdit }) {
+  if (!countFilters(filters)) return <aside className="hidden w-72 shrink-0 lg:block" />;
+  const budget = filters.minSalary !== '' || filters.maxSalary !== ''
+    ? `₹${toLpa(filters.minSalary) || 0}–${filters.maxSalary === '' ? 'Any' : toLpa(filters.maxSalary)} LPA`
+    : null;
   const rows = [
-    ['Role', job.title],
-    ['Experience', job.minExperience != null || job.maxExperience != null ? `${job.minExperience ?? 0}–${job.maxExperience ?? '∞'} yrs` : null],
-    ['Budget', job.salaryMax != null ? `₹${job.salaryMin ?? 0}–${job.salaryMax} LPA` : null],
-    ['Location', [job.jobLocation, job.workMode].filter(Boolean).join(' · ')],
+    ['Role', filters.role],
+    ['Experience', filters.minExp !== '' || filters.maxExp !== '' ? `${filters.minExp || 0}–${filters.maxExp || 'Any'} yrs` : null],
+    ['Budget', budget],
+    ['Location', [filters.location, filters.workMode].filter(Boolean).join(' · ')],
   ].filter(([, v]) => v);
   return (
     <aside className="sticky top-24 hidden w-72 shrink-0 space-y-4 self-start lg:block">
       <div className="glass rounded-3xl p-5">
         <div className="mb-4 flex items-center justify-between">
           <p className="text-xs font-bold uppercase tracking-[0.16em] text-white/40">Hiring for</p>
-          <Link to="/company/jobs" className="text-white/40 hover:text-white" title="Edit job">
+          <button onClick={onEdit} className="text-white/40 hover:text-white" title="Edit filters">
             <SlidersHorizontal size={15} />
-          </Link>
+          </button>
         </div>
         <dl className="space-y-3 text-sm">
           {rows.map(([k, v]) => (
@@ -106,7 +112,7 @@ function Sidebar({ job }) {
           ))}
         </dl>
         <div className="mt-4 flex flex-wrap gap-1.5">
-          {job.requiredSkills?.map((s) => (
+          {filters.skills?.map((s) => (
             <span key={s} className="chip">
               {s}
             </span>
@@ -124,9 +130,13 @@ function Sidebar({ job }) {
 }
 
 export default function SwipePage() {
+  const location = useLocation();
+  const navigate = useNavigate();
   const { user, profile, setProfile } = useAuth();
+  const savedKey = `glide_swipe_filters_${user?.companyId || user?.id}`;
+  const [initial] = useState(() => readSaved(savedKey));
   const [cards, setCards] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [loading, setLoading] = useState(() => countFilters(initial?.filters || EMPTY_FILTERS) > 0);
   const [exhausted, setExhausted] = useState(false);
   const [exitDir, setExitDir] = useState(1);
   const [resume, setResume] = useState(null);
@@ -136,45 +146,55 @@ export default function SwipePage() {
   const fetching = useRef(false);
   const pending = useRef(new Set());
 
-  // Filters are remembered per company in this browser.
-  const filterKey = `swipehire_filters_${user?.id}`;
-  const [filters, setFilters] = useState(() => {
-    try {
-      return { ...EMPTY_FILTERS, ...JSON.parse(localStorage.getItem(filterKey)) };
-    } catch {
-      return EMPTY_FILTERS;
-    }
-  });
+  const [filters, setFilters] = useState(initial?.filters || EMPTY_FILTERS);
   const [filtersOpen, setFiltersOpen] = useState(false);
   const filtersRef = useRef(filters);
-  const generation = useRef(0); // bumps when job/filters change, so stale responses are dropped
+  const generation = useRef(0);
   const activeFilters = countFilters(filters);
 
-  // Which job we are swiping for: ?job=… > last used > first open job.
   const [params, setParams] = useSearchParams();
-  const jobKey = `swipehire_job_${user?.companyId}`;
-  const [jobs, setJobs] = useState(null);
-  const [jobId, setJobId] = useState(() => params.get('job') || readKey(jobKey));
-  const jobRef = useRef(jobId);
-  const [currentJob, setCurrentJob] = useState(null);
+  const jobRef = useRef(params.get('job'));
   const [searches, setSearches] = useState([]);
+  const [activeSearchId, setActiveSearchId] = useState(initial?.searchId || '');
   const [undoable, setUndoable] = useState(0); // swipes made on this screen that can be taken back
   const [undoing, setUndoing] = useState(false);
   const [returning, setReturning] = useState(null); // { id, from } card flying back after undo
 
   const swipesLeft = profile?.swipesLeft ?? 0;
 
+  const openFilters = () => {
+    setFiltersOpen(true);
+    if (params.get('filters') !== 'open') {
+      const next = new URLSearchParams(params);
+      next.set('filters', 'open');
+      setParams(next, { replace: true });
+    }
+  };
+
+  const closeFilters = () => {
+    setFiltersOpen(false);
+    if (params.get('filters') === 'open') {
+      const next = new URLSearchParams(params);
+      next.delete('filters');
+      setParams(next, { replace: true });
+    }
+  };
+
   const loadMore = useCallback(async (current) => {
-    if (fetching.current || !jobRef.current) return;
+    if (fetching.current || !countFilters(filtersRef.current)) return;
     fetching.current = true;
     const gen = generation.current;
     try {
       const exclude = [...current.map((c) => c.id), ...pending.current].join(',');
+      const params = { limit: 10, exclude, ...filterParams(filtersRef.current) };
+      if (jobRef.current) params.jobId = jobRef.current;
       const { data } = await api.get('/company/feed', {
-        params: { limit: 10, exclude, jobId: jobRef.current, ...filterParams(filtersRef.current) },
+        params,
       });
       if (gen !== generation.current) return;
-      setCurrentJob(data.job);
+      if (!jobRef.current && data.job?.id) {
+        jobRef.current = data.job.id;
+      }
       setCards((prev) => {
         const seen = new Set(prev.map((c) => c.id));
         return [...prev, ...data.candidates.filter((c) => !seen.has(c.id))];
@@ -192,65 +212,53 @@ export default function SwipePage() {
     generation.current += 1;
     fetching.current = false;
     setCards([]);
-    setLoading(true);
+    setLoading(countFilters(filtersRef.current) > 0);
     setExhausted(false);
     setFeedError(null);
   };
 
-  const applyFilters = (next) => {
-    setFiltersOpen(false);
+  const applyFilters = (next, searchId = '') => {
+    closeFilters();
     filtersRef.current = next;
     setFilters(next);
-    writeKey(filterKey, next);
-    resetFeed();
-  };
-
-  const selectJob = (id) => {
-    if (id === jobRef.current) return;
-    jobRef.current = id;
-    setJobId(id);
-    writeKey(jobKey, id);
+    setActiveSearchId(searchId);
+    writeSaved(savedKey, { filters: next, searchId });
+    jobRef.current = null;
     setUndoable(0);
     resetFeed();
   };
 
-  // Load open jobs once; fall back to the first open job if the remembered one is gone.
   useEffect(() => {
-    api
-      .get('/company/jobs')
-      .then(({ data }) => {
-        const open = data.jobs.filter((j) => j.status === 'open');
-        setJobs(open);
-        if (!open.some((j) => j.id === jobRef.current)) {
-          const first = open[0]?.id ?? null;
-          jobRef.current = first;
-          setJobId(first);
-          if (!first) setLoading(false);
-        }
-        setCards((c) => [...c]); // re-run the loader now that we know the job
-      })
-      .catch((err) => {
-        setJobs([]);
-        setFeedError(errorMessage(err));
-        setLoading(false);
-      });
     api.get('/company/searches').then(({ data }) => setSearches(data.searches)).catch(() => {});
   }, []);
+
+  useEffect(() => {
+    if (params.get('filters') === 'open') setFiltersOpen(true);
+  }, [params]);
+
+  useEffect(() => {
+    const incomingFilters = location.state?.filters;
+    if (!incomingFilters) return;
+    applyFilters(incomingFilters);
+    navigate(`${location.pathname}${location.search}`, { replace: true, state: null });
+    // Apply once per navigation; route state is cleared immediately afterward.
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.key]);
 
   // Coming from a "new match" alert: apply that saved search.
   useEffect(() => {
     const sid = params.get('search');
     const s = sid && searches.find((x) => x.id === sid);
     if (!s) return;
-    applyFilters(fromSaved(s.filters));
+    applyFilters(fromSaved(s.filters), s.id);
     params.delete('search');
     setParams(params, { replace: true });
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [searches]);
 
   useEffect(() => {
-    if (jobs && jobId && cards.length < 3 && !exhausted && !feedError) loadMore(cards);
-  }, [cards, exhausted, feedError, loadMore, jobs, jobId]);
+    if (countFilters(filtersRef.current) && cards.length < 3 && !exhausted && !feedError) loadMore(cards);
+  }, [cards, exhausted, feedError, filters, loadMore]);
 
   // New swipes bought -> look for more candidates again.
   useEffect(() => {
@@ -341,6 +349,17 @@ export default function SwipePage() {
       return false;
     }
   };
+  const updateSearch = async (id, name, f) => {
+    try {
+      const { data } = await api.patch(`/company/searches/${id}`, { name, filters: filterParams(f) });
+      setSearches((all) => all.map((s) => (s.id === id ? data.search : s)));
+      toast.success(`Updated "${data.search.name}".`);
+      return true;
+    } catch (err) {
+      toast.error(errorMessage(err));
+      return false;
+    }
+  };
   const toggleSearchAlerts = async (s) => {
     setSearches((all) => all.map((x) => (x.id === s.id ? { ...x, alerts: !s.alerts } : x)));
     try {
@@ -351,8 +370,14 @@ export default function SwipePage() {
     }
   };
   const deleteSearch = async (s) => {
-    setSearches((all) => all.filter((x) => x.id !== s.id));
-    api.delete(`/company/searches/${s.id}`).catch(() => {});
+    try {
+      await api.delete(`/company/searches/${s.id}`);
+      setSearches((all) => all.filter((x) => x.id !== s.id));
+      if (activeSearchId === s.id) setActiveSearchId('');
+      toast.success(`Deleted "${s.name}".`);
+    } catch (err) {
+      toast.error(errorMessage(err));
+    }
   };
 
   const toggleWish = useCallback(async (candidate) => {
@@ -384,39 +409,36 @@ export default function SwipePage() {
   return (
     <CompanyShell>
       <div className="flex gap-8">
-        <Sidebar job={currentJob} />
+        <Sidebar filters={filters} onEdit={openFilters} />
 
         <section className="relative flex flex-1 flex-col items-center">
-          {jobs?.length > 0 && (
-            <div className="mb-3 flex w-full max-w-[430px] items-center gap-2">
-              <label className="relative min-w-0 flex-1">
-                <span className="sr-only">Job you are hiring for</span>
-                <Briefcase size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-400" />
-                <select
-                  value={jobId || ''}
-                  onChange={(e) => selectJob(e.target.value)}
-                  className="input appearance-none py-2.5 pl-10 pr-9 text-sm font-semibold"
-                  aria-label="Job you are hiring for"
-                >
-                  {jobs.map((j) => (
-                    <option key={j.id} value={j.id} className="bg-ink-800">
-                      {j.title}
-                      {j.jobLocation ? ` · ${j.jobLocation}` : ''}
-                    </option>
-                  ))}
-                </select>
-                <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40" />
-              </label>
-              <Link to="/company/jobs" className="btn-ghost shrink-0 px-3 py-2.5 text-sm" title="Manage jobs">
-                <Plus size={16} />
-                <span className="hidden sm:inline">Job</span>
-              </Link>
-            </div>
-          )}
+          <div className="mb-3 flex w-full max-w-[430px] items-center gap-2">
+            <label className="relative min-w-0 flex-1">
+              <span className="sr-only">Active role filter or saved filter</span>
+              <Briefcase size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-400" />
+              <select
+                value={activeSearchId}
+                onChange={(e) => {
+                  const saved = searches.find((s) => s.id === e.target.value);
+                  if (saved) applyFilters(fromSaved(saved.filters), saved.id);
+                }}
+                className="input appearance-none py-2.5 pl-10 pr-9 text-sm font-semibold"
+                aria-label="Active role or saved filter"
+              >
+                <option value="" disabled className="bg-ink-800">
+                  {searches.find((s) => s.id === activeSearchId)?.name || filters.role || (activeFilters ? 'Custom filters' : 'Choose filters to see candidates')}
+                </option>
+                {searches.map((s) => (
+                  <option key={s.id} value={s.id} className="bg-ink-800">{s.name}</option>
+                ))}
+              </select>
+              <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40" />
+            </label>
+          </div>
           <div className="mb-4 flex w-full max-w-[430px] items-center justify-between gap-2">
             <motion.button
               whileTap={{ scale: 0.95 }}
-              onClick={() => setFiltersOpen(true)}
+              onClick={openFilters}
               className={cx('btn-ghost py-2 text-sm', activeFilters > 0 && 'border-brand-500/50 text-white')}
             >
               <SlidersHorizontal size={16} />
@@ -441,7 +463,7 @@ export default function SwipePage() {
               {searches.slice(0, 6).map((s) => (
                 <button
                   key={s.id}
-                  onClick={() => applyFilters(fromSaved(s.filters))}
+                  onClick={() => applyFilters(fromSaved(s.filters), s.id)}
                   className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1.5 text-xs font-semibold text-white/65 ring-1 ring-white/10 hover:text-white"
                 >
                   <Bookmark size={12} className="text-brand-400" />
@@ -466,15 +488,15 @@ export default function SwipePage() {
               ))}
             </AnimatePresence>
 
-            {jobs?.length === 0 && !loading && (
+            {!top && !loading && !feedError && activeFilters === 0 && (
               <div className="glass absolute inset-0 flex flex-col items-center justify-center rounded-[30px] p-8 text-center">
-                <Briefcase size={36} className="text-white/40" />
-                <h3 className="mt-5 text-2xl font-extrabold">No open jobs</h3>
-                <p className="mt-2 text-white/55">Post a job (or reopen one) to start swiping candidates for it.</p>
-                <Link to="/company/jobs" className="btn-primary mt-6">
-                  <Plus size={18} />
-                  Go to jobs
-                </Link>
+                <SlidersHorizontal size={36} className="text-white/40" />
+                <h3 className="mt-5 text-2xl font-extrabold">Set filters to see candidates</h3>
+                <p className="mt-2 text-white/55">Choose the role and requirements you’re hiring for before viewing resumes.</p>
+                <button onClick={openFilters} className="btn-primary mt-6">
+                  <SlidersHorizontal size={18} />
+                  Set filters
+                </button>
               </div>
             )}
 
@@ -490,7 +512,7 @@ export default function SwipePage() {
               </div>
             )}
 
-            {!top && !loading && !feedError && jobs?.length > 0 && (
+            {!top && !loading && !feedError && activeFilters > 0 && (
               <motion.div
                 initial={{ opacity: 0, scale: 0.9 }}
                 animate={{ opacity: 1, scale: 1 }}
@@ -514,7 +536,7 @@ export default function SwipePage() {
                         <h3 className="mt-4 text-2xl font-extrabold">No one matches your filters</h3>
                         <p className="mt-2 text-white/55">Try widening them to see more candidates.</p>
                         <div className="mt-6 flex flex-wrap justify-center gap-3">
-                          <button onClick={() => setFiltersOpen(true)} className="btn-ghost">
+                          <button onClick={openFilters} className="btn-ghost">
                             <SlidersHorizontal size={18} />
                             Edit filters
                           </button>
@@ -575,11 +597,14 @@ export default function SwipePage() {
         open={filtersOpen}
         value={filters}
         onApply={applyFilters}
-        onClose={() => setFiltersOpen(false)}
+        onClose={closeFilters}
         searches={searches}
+        activeSearchId={activeSearchId}
         onSaveSearch={saveSearch}
+        onUpdateSearch={updateSearch}
         onToggleAlerts={toggleSearchAlerts}
         onDeleteSearch={deleteSearch}
+        onRemoveSearch={() => applyFilters(EMPTY_FILTERS)}
       />
 
       <Modal open={paywall} onClose={() => setPaywall(false)} className="sm:max-w-2xl">

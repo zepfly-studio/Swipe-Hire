@@ -8,10 +8,13 @@ const savedSearchSchema = new mongoose.Schema(
     createdBy: { type: mongoose.Schema.Types.ObjectId, ref: 'User' },
     name: { type: String, required: true, trim: true, maxlength: 60 },
     filters: {
+      role: String,
       location: String,
       minExp: Number,
       maxExp: Number,
+      minSalary: Number,
       maxSalary: Number,
+      workMode: { type: String, enum: ['onsite', 'remote', 'hybrid'] },
       notice: [String],
       skills: [String],
     },

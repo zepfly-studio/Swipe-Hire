@@ -18,10 +18,10 @@ import { withSignedFiles } from '../utils/signedUrl.js';
 import { num, text, requireFields, stripUndefined } from '../utils/fields.js';
 import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { storeUpload } from '../utils/storage.js';
-import { feedFilters, normalizeFilters, toCard } from '../utils/candidates.js';
+import { feedFilters, hasFilters, normalizeFilters, toCard } from '../utils/candidates.js';
 import { salaryFits, salaryFitWhere } from '../utils/match.js';
 import { feedRank } from '../utils/activity.js';
-import { jobFields, needsApproval, publicJob, resolveJob } from '../utils/jobs.js';
+import { publicJob, resolveFilterJob, resolveJob } from '../utils/jobs.js';
 import { notify } from '../utils/notify.js';
 import { sendMail } from '../utils/mailer.js';
 import { showEmailCodeOn } from '../utils/settings.js';
@@ -75,9 +75,10 @@ router.delete('/logo', async (req, res) => {
   res.json({ profile: withSignedFiles(profile) });
 });
 
-// Company details. During onboarding the same request also carries the first job.
+// Company details. Hiring requirements are set in the swipe filters.
 router.put('/profile', async (req, res) => {
   const b = req.body ?? {};
+  const cid = req.user.companyId;
   const data = stripUndefined({
     companyName: text(b.companyName, 100),
     industry: text(b.industry, 60),
@@ -91,25 +92,25 @@ router.put('/profile', async (req, res) => {
     linkedin: cleanUrl(b.linkedin, 'linkedin'),
     foundedYear: num(b.foundedYear, 'founded year', { min: 1800, max: new Date().getFullYear(), field: 'foundedYear' }),
   });
-  requireFields(data, { companyName: 'Company name', location: 'Company location' });
+  const current = await CompanyProfile.findOne({ user: cid }).lean();
+  requireFields(
+    data,
+    current?.completed
+      ? { companyName: 'Company name', location: 'Company location' }
+      : {
+          companyName: 'Company name',
+          industry: 'Company sector',
+          companySize: 'Company size',
+          location: 'Company location',
+          phone: 'Contact number',
+          contactEmail: 'HR email',
+        },
+  );
   if (data.phone && !/^\+?[\d\s-]{8,16}$/.test(data.phone)) throw new HttpError(400, 'Please enter a valid phone number', { field: 'phone' });
   if (data.contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(data.contactEmail)) {
     throw new HttpError(400, 'Please enter a valid email address', { field: 'contactEmail' });
   }
 
-  const cid = req.user.companyId;
-  // First time: the onboarding form also describes the first job. Later jobs are
-  // managed on the Jobs page, so edits here only change company details.
-  if (!(await Job.exists({ company: cid }))) {
-    const job = jobFields(b);
-    job.jobLocation = job.jobLocation || data.location;
-    await Job.create({ ...job, company: cid, createdBy: req.user.id, ...((await needsApproval(cid)) && { approved: false }) });
-    // Kept on the profile for older screens; jobs are the source of truth now.
-    data.hiringFor = job.title;
-    data.requiredSkills = job.requiredSkills;
-  }
-
-  const current = await CompanyProfile.findOne({ user: cid }).lean();
   const renamed =
     current?.verification?.status && current.verification.status !== 'none' &&
     (data.companyName !== current.companyName || (data.website || '') !== (current.website || ''));
@@ -127,8 +128,12 @@ router.put('/profile', async (req, res) => {
 
 router.get('/feed', async (req, res) => {
   const company = await getCompany(req);
-  if (!company.completed) throw new HttpError(403, 'Please complete your hiring requirements first');
-  const job = await resolveJob(req.user.companyId, req.query.jobId);
+  if (!company.completed) throw new HttpError(403, 'Please complete your company profile first');
+  const filters = normalizeFilters(req.query);
+  if (!hasFilters(filters)) throw new HttpError(400, 'Apply at least one filter before viewing candidates', { code: 'FILTER_REQUIRED' });
+  const job = req.query.jobId
+    ? await resolveJob(req.user.companyId, req.query.jobId)
+    : await resolveFilterJob(req.user.companyId, filters);
   if (job.approved === false) throw new HttpError(409, 'This job is waiting for approval by the Glide Recruit team. You can start swiping once it is approved, usually within a few hours.', { code: 'JOB_PENDING' });
   if (job.status !== 'open') throw new HttpError(409, 'This job is paused or closed. Reopen it to see candidates.');
 
@@ -140,7 +145,8 @@ router.get('/feed', async (req, res) => {
   if (limit === 0) return res.json({ candidates: [], swipesLeft: company.swipesLeft, job: publicJob(job) });
 
   const [swiped, wishlisted] = await Promise.all([
-    Swipe.find({ company: req.user.companyId, job: job._id }).distinct('candidate'),
+    // Anyone already swiped, under any filters, stays out so no credit is spent on them twice.
+    Swipe.find({ company: req.user.companyId }).distinct('candidate'),
     Wishlist.find({ company: req.user.companyId }).distinct('candidate'),
   ]);
   const wish = new Set(wishlisted.map(String));
@@ -190,6 +196,10 @@ router.post('/swipe', async (req, res) => {
       `${candidate.user.name.split(' ')[0]} expects at least ₹${candidate.expectedSalary} LPA, above this job's budget of ₹${job.salaryMax} LPA, and is not open to negotiate.`,
       { code: 'SALARY_MISMATCH' },
     );
+  }
+
+  if (await Swipe.exists({ company: cid, candidate: candidateId })) {
+    throw new HttpError(409, 'You have already swiped this candidate');
   }
 
   const company = await CompanyProfile.findOneAndUpdate(
@@ -418,8 +428,7 @@ router.post('/searches', async (req, res) => {
   const name = text(req.body?.name, 60);
   if (!name) throw new HttpError(400, 'Give this search a name', { field: 'name' });
   const filters = normalizeFilters(req.body?.filters);
-  const empty = !filters.location && filters.minExp === null && filters.maxExp === null && filters.maxSalary === null && !filters.notice.length && !filters.skills.length;
-  if (empty) throw new HttpError(400, 'Set at least one filter before saving the search');
+  if (!hasFilters(filters)) throw new HttpError(400, 'Set at least one filter before saving the search');
   if ((await SavedSearch.countDocuments({ company: req.user.companyId })) >= 20) {
     throw new HttpError(400, 'You can save up to 20 searches. Delete one first.');
   }
@@ -440,7 +449,22 @@ router.patch('/searches/:id', async (req, res) => {
   assertId(req.params.id, 'search');
   const update = {};
   if (typeof req.body?.alerts === 'boolean') update.alerts = req.body.alerts;
-  if (req.body?.name !== undefined) update.name = text(req.body.name, 60) || undefined;
+  if (req.body?.name !== undefined) {
+    const name = text(req.body.name, 60);
+    if (!name) throw new HttpError(400, 'Give this search a name', { field: 'name' });
+    update.name = name;
+  }
+  if (req.body?.filters !== undefined) {
+    const filters = normalizeFilters(req.body.filters);
+    if (!hasFilters(filters)) throw new HttpError(400, 'Set at least one filter before saving the search');
+    const existing = await CandidateProfile.find({
+      step: 3,
+      suspended: { $ne: true },
+      ...feedFilters(filters),
+    }).distinct('user');
+    update.filters = filters;
+    update.notifiedCandidates = existing.slice(-5000);
+  }
   const s = await SavedSearch.findOneAndUpdate({ _id: req.params.id, company: req.user.companyId }, update, { returnDocument: 'after' }).lean();
   if (!s) throw new HttpError(404, 'Saved search not found');
   res.json({ search: { id: String(s._id), name: s.name, filters: s.filters, alerts: s.alerts } });

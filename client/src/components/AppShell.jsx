@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react';
 import { Link, NavLink, useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import {
-  BadgeCheck, Briefcase, Building2, CalendarClock, ClipboardList, Crown, Heart, House, Layers, LogOut, MessageCircle, Pencil, ShieldCheck,
+  BadgeCheck, Building2, CalendarClock, ClipboardList, Crown, Heart, House, Layers, LogOut, MessageCircle, Pencil, ShieldCheck,
   LifeBuoy, SlidersHorizontal, UserCog, UserPlus, Users, Zap,
 } from 'lucide-react';
 import Background from './Background';
@@ -17,7 +17,7 @@ import { api, cx } from '../lib/api';
 // from the swipe screen and Tasks from the profile menu.
 const COMPANY_LINKS = [
   { to: '/company/swipe', label: 'Swipe', icon: Layers },
-  { to: '/company/jobs', label: 'Jobs', icon: Briefcase },
+  { to: '/company/filters', label: 'Filters', icon: SlidersHorizontal },
   { to: '/company/shortlisted', label: 'Shortlisted', icon: Users },
   { to: '/company/wishlist', label: 'Wishlist', icon: Heart, desktopOnly: true },
   { to: '/messages', label: 'Messages', icon: MessageCircle, badge: 'messages' },
@@ -178,19 +178,22 @@ export default function AppShell({ children }) {
           <nav className="ml-4 hidden min-w-0 items-center gap-1 md:flex lg:ml-6">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} title={l.label} className="relative rounded-xl px-3 py-2 text-sm font-semibold">
-                {({ isActive }) => (
-                  <>
-                    {isActive && (
+                {({ isActive }) => {
+                  const active = isActive;
+                  return (
+                    <>
+                    {active && (
                       <motion.span layoutId="nav-pill" className="absolute inset-0 rounded-xl bg-white/[0.08]" transition={{ type: 'spring', stiffness: 400, damping: 34 }} />
                     )}
-                    <span className={cx('relative flex items-center gap-2', isActive ? 'text-white' : 'text-white/50 hover:text-white')}>
+                    <span className={cx('relative flex items-center gap-2', active ? 'text-white' : 'text-white/50 hover:text-white')}>
                       <l.icon size={16} />
                       {/* Icons only on narrower screens, where the labels don't fit (seven for companies). */}
                       <span className={cx('hidden', links.length > 5 ? 'xl:inline' : 'lg:inline')}>{l.label}</span>
                       <Badge n={badges[l.badge]} />
                     </span>
-                  </>
-                )}
+                    </>
+                  );
+                }}
               </NavLink>
             ))}
           </nav>

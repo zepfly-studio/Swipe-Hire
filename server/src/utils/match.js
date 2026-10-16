@@ -43,7 +43,7 @@ export function matchCandidate(candidate, company) {
   max += 10;
   const jobLoc = (company.jobLocation || '').toLowerCase();
   const candLoc = (candidate.location || '').toLowerCase();
-  if (company.workMode === 'remote' || (jobLoc && candLoc && (jobLoc.includes(candLoc) || candLoc.includes(jobLoc)))) {
+  if (company.workMode === 'remote' || !jobLoc || (jobLoc && candLoc && (jobLoc.includes(candLoc) || candLoc.includes(jobLoc)))) {
     score += 10;
   }
 

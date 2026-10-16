@@ -8,7 +8,10 @@ export const ROLES = [
   'React Developer', 'React Native Developer', 'Next.js Developer', 'Angular Developer', 'Vue.js Developer',
   'Node.js Developer', 'JavaScript Developer', 'TypeScript Developer', 'Python Developer', 'Django Developer',
   'Java Developer', 'Spring Boot Developer', 'PHP Developer', 'Laravel Developer', 'WordPress Developer',
-  'Shopify Developer', '.NET Developer', 'C# Developer', 'C++ Developer', 'Go Developer', 'Ruby on Rails Developer',
+  'Web Application Developer', 'Web Software Engineer', 'Web UI Developer', 'Web Programmer',
+  'Web Development Intern', 'Web3 Developer', 'Website Administrator', 'Website Manager',
+  'Website Designer', 'Webmaster', 'Shopify Developer', '.NET Developer', 'C# Developer', 'C++ Developer',
+  'Go Developer', 'Ruby on Rails Developer',
   'Android Developer', 'iOS Developer', 'Flutter Developer', 'Mobile App Developer', 'Game Developer',
   'Unity Developer', 'Blockchain Developer', 'Salesforce Developer', 'SAP Consultant', 'API Developer',
   'Software Developer', 'Application Developer', 'Embedded Systems Developer',
@@ -36,7 +39,8 @@ export const ROLES = [
   // Marketing & content
   'Digital Marketing Executive', 'Digital Marketing Manager', 'SEO Executive', 'SEO Specialist',
   'Social Media Manager', 'Social Media Executive', 'Performance Marketer', 'Content Writer', 'Copywriter',
-  'Content Creator', 'Marketing Executive', 'Marketing Manager', 'Brand Manager', 'Public Relations Executive',
+  'Content Creator', 'Web Content Writer', 'Web Content Manager', 'Web Marketing Specialist',
+  'Marketing Executive', 'Marketing Manager', 'Brand Manager', 'Public Relations Executive',
   // Sales & business
   'Sales Executive', 'Sales Manager', 'Business Development Executive', 'Business Development Manager',
   'Inside Sales Executive', 'Field Sales Executive', 'Relationship Manager', 'Key Account Manager',
@@ -46,14 +50,16 @@ export const ROLES = [
   'BPO Executive', 'Front Desk Executive', 'Receptionist',
   // HR & admin
   'HR Executive', 'HR Manager', 'HR Generalist', 'Recruiter', 'Technical Recruiter', 'Talent Acquisition Executive',
-  'Admin Executive', 'Office Assistant', 'Personal Assistant', 'Data Entry Operator', 'Back Office Executive',
+  'Admin Executive', 'Warehouse Executive', 'Warehouse Manager', 'Workforce Manager',
+  'Office Assistant', 'Personal Assistant', 'Data Entry Operator', 'Back Office Executive',
   // Finance & accounts
   'Accountant', 'Accounts Executive', 'Accounts Manager', 'Chartered Accountant (CA)', 'Finance Executive',
-  'Finance Manager', 'Financial Analyst', 'Auditor', 'Tax Consultant', 'GST Executive', 'Banking Executive',
+  'Finance Manager', 'Financial Analyst', 'Wealth Manager', 'Auditor', 'Tax Consultant', 'GST Executive', 'Banking Executive',
   // Others
   'Teacher', 'Tutor', 'Trainer', 'Lecturer', 'Doctor', 'Nurse', 'Pharmacist', 'Lab Technician',
   'Lawyer', 'Legal Executive', 'Supply Chain Executive', 'Logistics Executive', 'Purchase Executive',
-  'Store Keeper', 'Delivery Executive', 'Driver', 'Electrician', 'Technician', 'Chef', 'Hotel Manager',
+  'Store Keeper', 'Waiter', 'Welder', 'Wedding Planner', 'Wellness Coach', 'Writer',
+  'Delivery Executive', 'Driver', 'Electrician', 'Technician', 'Chef', 'Hotel Manager',
   'Event Manager', 'Travel Consultant', 'Fresher / Intern',
 ];
 

@@ -1,6 +1,8 @@
-import { CITIES, STATES } from '../../../shared/taxonomy.js';
+import { CITIES, DEGREES, ROLES, SKILLS, STATES } from '../../../shared/taxonomy.js';
 
-export { ROLES, SKILLS, DEGREES } from '../../../shared/taxonomy.js';
+export const ALL_INDIA = 'All India';
+
+export { ROLES, SKILLS, DEGREES };
 
 const normalize = (s) => s.toLowerCase().replace(/[^a-z0-9+#.]+/g, ' ').trim();
 
@@ -43,12 +45,22 @@ export function searchOptions(options, query, { exclude = [], limit = 10, minSco
 // Location suggestions: up to 7 cities plus up to 3 states, so a short query like "j"
 // shows Jaipur, Jodhpur… and also Jharkhand instead of only cities.
 export function searchLocations(query, { exclude = [] } = {}) {
+  const q = (query || '').trim();
+  const allIndia = ALL_INDIA;
+  if (!q) return [allIndia];
+  if (/^all\s*india$/i.test(q)) return [allIndia];
   const find = (minScore) => {
     const states = searchOptions(STATES, query, { exclude, limit: 3, minScore });
     const cities = searchOptions(CITIES, query, { exclude, limit: 10 - states.length, minScore });
-    return [...cities, ...states];
+    return [allIndia, ...cities, ...states];
   };
   // Names starting with what was typed; looser matches (typos, middle of a word) only if none.
   const strict = find(2);
-  return strict.length ? strict : find(1);
+  const results = strict.length ? strict : find(1);
+  return results.filter((item, index, arr) => item && arr.indexOf(item) === index).slice(0, 12);
+}
+
+export function searchRoles(query, { exclude = [] } = {}) {
+  const strict = searchOptions(ROLES, query, { exclude, limit: 20, minScore: 2 });
+  return strict.length ? strict : searchOptions(ROLES, query, { exclude, limit: 20, minScore: 1 });
 }
