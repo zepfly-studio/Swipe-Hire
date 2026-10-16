@@ -234,7 +234,7 @@ function Thread({ otherId, isCompany, onBack, onSent }) {
   );
 }
 
-// "New message": everyone you can chat with (shortlisted pairs), searchable.
+// "New message" (companies) / "Search" (candidates): everyone you can chat with, searchable.
 function NewMessageModal({ open, onClose, onPick, isCompany }) {
   const [contacts, setContacts] = useState(null);
   const [q, setQ] = useState('');
@@ -255,7 +255,7 @@ function NewMessageModal({ open, onClose, onPick, isCompany }) {
     <Modal open={open} onClose={onClose}>
       <div className="flex items-start justify-between gap-3 border-b border-white/10 p-5">
         <div>
-          <h2 className="text-xl font-extrabold">New message</h2>
+          <h2 className="text-xl font-extrabold">{isCompany ? 'New message' : 'Search'}</h2>
           <p className="text-sm text-white/50">{isCompany ? 'Candidates you shortlisted' : 'Companies that contacted you'}</p>
         </div>
         <button onClick={onClose} className="btn-ghost p-2" aria-label="Close">
@@ -263,7 +263,7 @@ function NewMessageModal({ open, onClose, onPick, isCompany }) {
         </button>
       </div>
       <div className="border-b border-white/10 p-4">
-        <Input icon={Search} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search by name or role" />
+        <Input icon={Search} value={q} onChange={(e) => setQ(e.target.value)} placeholder={isCompany ? 'Search by name or role' : 'Search company name'} aria-label={isCompany ? 'Search by name or role' : 'Search company name'} />
       </div>
       <div className="no-scrollbar max-h-[55dvh] flex-1 overflow-y-auto p-2">
         {!contacts && <Spinner className="py-10" />}
@@ -325,8 +325,8 @@ export default function MessagesPage() {
         <div className="flex items-center gap-2">
           {active && isCompany && <StagePill stage={active.stage} />}
           <button onClick={() => setPicking(true)} className="btn-primary px-4 py-2.5 text-sm">
-            <SquarePen size={16} />
-            New message
+            {isCompany ? <SquarePen size={16} /> : <Search size={16} />}
+            {isCompany ? 'New message' : 'Search'}
           </button>
         </div>
       </div>

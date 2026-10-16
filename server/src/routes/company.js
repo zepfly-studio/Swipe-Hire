@@ -143,7 +143,7 @@ router.get('/feed', async (req, res) => {
     .filter((id) => mongoose.isValidObjectId(id));
   // Never hand out more cards than the company can actually swipe.
   const limit = Math.max(0, Math.min(Number(req.query.limit) || 10, 30, company.swipesLeft - exclude.length));
-  if (limit === 0) return res.json({ candidates: [], swipesLeft: company.swipesLeft, job: publicJob(job) });
+  if (limit === 0) return res.json({ candidates: [], swipesLeft: company.swipesLeft, job: publicJob(job), canUndo: await canUndo(req.user.companyId, req.user.id) });
 
   const [swiped, wishlisted] = await Promise.all([
     // Anyone already swiped, under any filters, stays out so no credit is spent on them twice.
@@ -216,7 +216,14 @@ router.get('/feed', async (req, res) => {
     }
   }
 
-  res.json({ candidates, swipesLeft: company.swipesLeft, job: publicJob(job), ...(seen && { seen }), ...(fallback && { fallback: true }) });
+  res.json({
+    candidates,
+    swipesLeft: company.swipesLeft,
+    job: publicJob(job),
+    canUndo: await canUndo(req.user.companyId, req.user.id),
+    ...(seen && { seen }),
+    ...(fallback && { fallback: true }),
+  });
 });
 
 router.post('/swipe', async (req, res) => {
@@ -265,6 +272,7 @@ router.post('/swipe', async (req, res) => {
 
   res.json({
     swipesLeft: company.swipesLeft,
+    canUndo: true,
     contact: action === 'right' ? { email: candidate.user.email, phone: candidate.phone } : undefined,
   });
 });
@@ -274,6 +282,18 @@ router.post('/swipe', async (req, res) => {
 // undo would make them free). Pressing undo again goes one more swipe back.
 const UNDO_PASS_MS = 24 * 60 * 60 * 1000;
 const UNDO_SHORTLIST_MS = 10 * 60 * 1000;
+
+// Is there a swipe this recruiter can still take back? Lets the page turn the Undo button off
+// once everything has been undone (a shortlist they already acted on is checked on undo).
+async function canUndo(cid, userId) {
+  const last = await Swipe.findOne({ company: cid, swipedBy: userId, createdAt: { $gte: new Date(Date.now() - UNDO_PASS_MS) } })
+    .sort({ createdAt: -1 })
+    .select('action stage createdAt')
+    .lean();
+  if (!last) return false;
+  return last.action === 'left' || (last.stage === 'shortlisted' && Date.now() - last.createdAt <= UNDO_SHORTLIST_MS);
+}
+
 router.post('/swipe/undo', async (req, res) => {
   const cid = req.user.companyId;
   const last = await Swipe.findOne({
@@ -310,6 +330,7 @@ router.post('/swipe/undo', async (req, res) => {
   ]);
   res.json({
     swipesLeft: company.swipesLeft,
+    canUndo: await canUndo(cid, req.user.id),
     action: last.action,
     jobId: String(last.job),
     card: profile?.user ? toCard(profile, job, { wishlisted: Boolean(wished) }) : null,

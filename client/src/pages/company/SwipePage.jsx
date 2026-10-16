@@ -160,6 +160,7 @@ export default function SwipePage() {
   const [searches, setSearches] = useState([]);
   const [activeSearchId, setActiveSearchId] = useState(initial?.searchId || '');
   const [undoing, setUndoing] = useState(false);
+  const [canUndo, setCanUndo] = useState(false); // the server says there is a swipe to take back
   const [returning, setReturning] = useState(null); // { id, from } card flying back after undo
 
   const swipesLeft = profile?.swipesLeft ?? 0;
@@ -194,6 +195,7 @@ export default function SwipePage() {
         params,
       });
       if (gen !== generation.current) return;
+      if (typeof data.canUndo === 'boolean') setCanUndo(data.canUndo);
       if (!jobRef.current && data.job?.id) {
         jobRef.current = data.job.id;
       }
@@ -291,6 +293,7 @@ export default function SwipePage() {
       api
         .post('/company/swipe', { candidateId: top.id, action: dir > 0 ? 'right' : 'left', jobId: jobRef.current })
         .then(({ data }) => {
+          setCanUndo(data.canUndo !== false);
           // Replies can arrive out of order; while other swipes are in flight keep the lowest count.
           setProfile((p) => ({
             ...p,
@@ -321,10 +324,11 @@ export default function SwipePage() {
   // Takes back the most recent swipe; the card flies back in from where it went.
   const undo = async () => {
     // Without filters there is no stack to put the card back into.
-    if (undoing || !activeFilters) return;
+    if (undoing || !activeFilters || !canUndo) return;
     setUndoing(true);
     try {
       const { data } = await api.post('/company/swipe/undo');
+      setCanUndo(Boolean(data.canUndo));
       setProfile((p) => ({ ...p, swipesLeft: data.swipesLeft }));
       // The card comes back on top, even if the filters changed since that swipe.
       if (data.card) {
@@ -334,6 +338,8 @@ export default function SwipePage() {
       }
       toast.success(data.action === 'right' ? 'Shortlist undone. Its swipe is not refunded, as contact details were shown.' : 'Pass undone, swipe refunded', { id: 'undo' });
     } catch (err) {
+      // Nothing (more) to take back: turn the button off.
+      if ([404, 409].includes(err.response?.status)) setCanUndo(false);
       toast.error(errorMessage(err), { id: 'undo' });
     } finally {
       setUndoing(false);
@@ -558,7 +564,7 @@ export default function SwipePage() {
               label="Undo last swipe"
               size="sm"
               onClick={undo}
-              disabled={undoing || !activeFilters}
+              disabled={undoing || !activeFilters || !canUndo}
               className="border-amber-300/40 text-amber-300 hover:bg-amber-300 hover:text-ink-950"
             >
               <RotateCcw size={19} strokeWidth={2.5} />
