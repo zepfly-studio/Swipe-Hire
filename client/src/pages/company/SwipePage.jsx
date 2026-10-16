@@ -318,7 +318,8 @@ export default function SwipePage() {
 
   // Takes back the most recent swipe; the card flies back in from where it went.
   const undo = async () => {
-    if (undoing) return;
+    // Without filters there is no stack to put the card back into.
+    if (undoing || !activeFilters) return;
     setUndoing(true);
     try {
       const { data } = await api.post('/company/swipe/undo');
@@ -555,7 +556,7 @@ export default function SwipePage() {
               label="Undo last swipe"
               size="sm"
               onClick={undo}
-              disabled={undoing}
+              disabled={undoing || !activeFilters}
               className="border-amber-300/40 text-amber-300 hover:bg-amber-300 hover:text-ink-950"
             >
               <RotateCcw size={19} strokeWidth={2.5} />
