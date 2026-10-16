@@ -1,7 +1,7 @@
 import { useCallback, useEffect, useRef, useState } from 'react';
 import { Link, useLocation, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BadgeCheck, Bookmark, Briefcase, ChevronDown, Crown, Heart, Mail, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
+import { BadgeCheck, Crown, Heart, Mail, RotateCcw, SlidersHorizontal, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import CompanyShell from '../../components/CompanyShell';
 import SwipeCard from '../../components/SwipeCard';
@@ -412,29 +412,6 @@ export default function SwipePage() {
         <Sidebar filters={filters} onEdit={openFilters} />
 
         <section className="relative flex flex-1 flex-col items-center">
-          <div className="mb-3 flex w-full max-w-[430px] items-center gap-2">
-            <label className="relative min-w-0 flex-1">
-              <span className="sr-only">Active role filter or saved filter</span>
-              <Briefcase size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-400" />
-              <select
-                value={activeSearchId}
-                onChange={(e) => {
-                  const saved = searches.find((s) => s.id === e.target.value);
-                  if (saved) applyFilters(fromSaved(saved.filters), saved.id);
-                }}
-                className="input appearance-none py-2.5 pl-10 pr-9 text-sm font-semibold"
-                aria-label="Active role or saved filter"
-              >
-                <option value="" disabled className="bg-ink-800">
-                  {searches.find((s) => s.id === activeSearchId)?.name || filters.role || (activeFilters ? 'Custom filters' : 'Choose filters to see candidates')}
-                </option>
-                {searches.map((s) => (
-                  <option key={s.id} value={s.id} className="bg-ink-800">{s.name}</option>
-                ))}
-              </select>
-              <ChevronDown size={16} className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-white/40" />
-            </label>
-          </div>
           <div className="mb-4 flex w-full max-w-[430px] items-center justify-between gap-2">
             <motion.button
               whileTap={{ scale: 0.95 }}
@@ -458,20 +435,6 @@ export default function SwipePage() {
               </Link>
             )}
           </div>
-          {searches.length > 0 && (
-            <div className="no-scrollbar mb-4 flex w-full max-w-[430px] gap-2 overflow-x-auto">
-              {searches.slice(0, 6).map((s) => (
-                <button
-                  key={s.id}
-                  onClick={() => applyFilters(fromSaved(s.filters), s.id)}
-                  className="flex shrink-0 items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1.5 text-xs font-semibold text-white/65 ring-1 ring-white/10 hover:text-white"
-                >
-                  <Bookmark size={12} className="text-brand-400" />
-                  {s.name}
-                </button>
-              ))}
-            </div>
-          )}
           {/* Height follows the top card; the whole page scrolls through it. */}
           <div className="relative mb-6 min-h-[60dvh] w-full max-w-[430px]">
             <AnimatePresence custom={exitDir}>

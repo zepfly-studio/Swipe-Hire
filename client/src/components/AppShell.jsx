@@ -174,7 +174,10 @@ export default function AppShell({ children }) {
       <Background />
       <header className="sticky top-0 z-40 border-b border-white/5 bg-ink-950/60 backdrop-blur-xl">
         <div className="mx-auto flex h-16 max-w-7xl items-center gap-2 px-4">
-          <Logo />
+          {/* The logo goes to the user's home tab (Swipe for companies), same as the first nav link. */}
+          <Link to={links[0]?.to || '/'} aria-label="Home" className="shrink-0">
+            <Logo />
+          </Link>
           <nav className="ml-4 hidden min-w-0 items-center gap-1 md:flex lg:ml-6">
             {links.map((l) => (
               <NavLink key={l.to} to={l.to} end={l.end} title={l.label} className="relative rounded-xl px-3 py-2 text-sm font-semibold">
