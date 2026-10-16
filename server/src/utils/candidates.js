@@ -62,7 +62,8 @@ function titleWhere(title) {
   const words = roleWords(title);
   return {
     $and: (words.length ? words : [title]).map((w) => {
-      const rx = new RegExp(escapeRegex(w), 'i');
+      // Whole words only: "java" must not match "JavaScript".
+      const rx = new RegExp(`(^|[^a-z0-9])${escapeRegex(w)}($|[^a-z0-9])`, 'i');
       return { $or: [{ headline: rx }, { currentPost: rx }, { skills: rx }] };
     }),
   };
