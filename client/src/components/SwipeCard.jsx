@@ -3,7 +3,7 @@ import { motion, animate, useDragControls, useIsPresent, useMotionValue, useTran
 import { Briefcase, ChevronsDown, Heart, IndianRupee, Maximize2, MapPin } from 'lucide-react';
 import { PdfFirstPage } from './Pdf';
 import Avatar from './Avatar';
-import { CandidateDetails, MatchBadge, expLabel, expectedSalaryLabel } from './CandidateDetails';
+import { CandidateDetails, IntroVideo, MatchBadge, SectionTitle, expLabel, expectedSalaryLabel } from './CandidateDetails';
 import { useElementWidth } from '../hooks/useElementWidth';
 import { cx, fileUrl } from '../lib/api';
 
@@ -150,35 +150,45 @@ export default function SwipeCard({ c, depth, onSwipe, onOpenResume, onToggleWis
           </motion.div>
         </header>
 
-        <div className="space-y-6 p-4 pb-8">
-          <div
-            ref={pdfRef}
-            onClick={onResumeTap}
-            className="group relative cursor-zoom-in overflow-hidden rounded-2xl bg-[#fff] ring-1 ring-white/10"
-            style={{ aspectRatio: '1 / 1.3' }}
-          >
-            {/* Cards waiting behind preload their resume so it is ready when they reach the top. */}
-            {depth <= 2 && c.resumeUrl ? <PdfFirstPage file={fileUrl(c.resumeUrl)} width={pdfWidth} /> : null}
-            <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-black/50 to-transparent" />
-            <span className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-black/75 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur transition group-hover:bg-brand-500">
-              <Maximize2 size={13} />
-              Double-tap to open resume
-            </span>
-          </div>
-
+        {/* Order: skills and details first, then the intro video, then the resume. */}
+        <div className="space-y-7 p-4 pb-8">
           {isTop && (
             <>
+              <CandidateDetails c={c} showVideo={false} />
+              {c.videoUrl && (
+                <section>
+                  <SectionTitle>Intro video</SectionTitle>
+                  <IntroVideo url={c.videoUrl} />
+                </section>
+              )}
               <motion.p
                 className="flex items-center justify-center gap-1.5 text-xs font-semibold text-white/40"
                 animate={{ y: [0, 5, 0] }}
                 transition={{ duration: 1.6, repeat: Infinity }}
               >
                 <ChevronsDown size={15} />
-                Scroll down for intro video & details
+                Resume below
               </motion.p>
-              <CandidateDetails c={c} />
             </>
           )}
+
+          <section>
+            {isTop && <SectionTitle>Resume</SectionTitle>}
+            <div
+              ref={pdfRef}
+              onClick={onResumeTap}
+              className="group relative cursor-zoom-in overflow-hidden rounded-2xl bg-[#fff] ring-1 ring-white/10"
+              style={{ aspectRatio: '1 / 1.3' }}
+            >
+              {/* Cards waiting behind preload their resume so it is ready when they reach the top. */}
+              {depth <= 2 && c.resumeUrl ? <PdfFirstPage file={fileUrl(c.resumeUrl)} width={pdfWidth} /> : null}
+              <div className="pointer-events-none absolute inset-x-0 bottom-0 h-24 bg-linear-to-t from-black/50 to-transparent" />
+              <span className="pointer-events-none absolute bottom-3 left-1/2 flex -translate-x-1/2 items-center gap-1.5 whitespace-nowrap rounded-full bg-black/75 px-3.5 py-1.5 text-xs font-semibold text-white backdrop-blur transition group-hover:bg-brand-500">
+                <Maximize2 size={13} />
+                Double-tap to open resume
+              </span>
+            </div>
+          </section>
         </div>
 
         <motion.div className="pointer-events-none absolute inset-0 z-10 bg-emerald-400" style={{ opacity: likeTint }} />

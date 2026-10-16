@@ -265,10 +265,9 @@ export default function CandidateListPage({ kind }) {
   };
   // Takes the candidate off the shortlist for that job (see DELETE /company/pipeline/:id).
   const unshortlist = async (c) => {
-    const job = c.job?.title ? ` for ${c.job.title}` : '';
-    if (!window.confirm(`Remove ${c.name} from the shortlist${job}?
+    if (!window.confirm(`Remove ${c.name} from the shortlist?
 
-They won't show up in this job's feed again. If they aren't shortlisted for any other job, open interviews and tasks with them are cancelled and chat closes.`)) return;
+They will show up again on the Swipe page when they match your filters. Open interviews and tasks with them are cancelled and chat closes.`)) return;
     try {
       const { data } = await api.delete(`/company/pipeline/${c.swipeId}`);
       setItems((list) => list.filter((x) => rowKey(x) !== rowKey(c)));

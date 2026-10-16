@@ -391,17 +391,14 @@ router.patch('/pipeline/:swipeId', async (req, res) => {
   res.json({ ok: true, ...update });
 });
 
-// Removes a candidate from the shortlist for that job. The swipe becomes a pass, so they
-// don't come back into this job's feed; the credit is not refunded (their contact was
-// already shown). If no other job still has them shortlisted, open interviews and tasks
-// with them are cancelled and chat closes (chat needs a shortlist).
+// Removes a candidate from the shortlist. The swipe is deleted, so they show up again in
+// the swipe feed when they match the filters; the credit is not refunded (their contact
+// was already shown). If nothing else still has them shortlisted, open interviews and
+// tasks with them are cancelled and chat closes (chat needs a shortlist).
 router.delete('/pipeline/:swipeId', async (req, res) => {
   assertId(req.params.swipeId, 'pipeline entry');
   const cid = req.user.companyId;
-  const swipe = await Swipe.findOneAndUpdate(
-    { _id: req.params.swipeId, company: cid, action: 'right' },
-    { $set: { action: 'left', stage: 'shortlisted', notes: '' } },
-  );
+  const swipe = await Swipe.findOneAndDelete({ _id: req.params.swipeId, company: cid, action: 'right' });
   if (!swipe) throw new HttpError(404, 'This candidate is not in your pipeline');
 
   const pair = { company: cid, candidate: swipe.candidate };
