@@ -4,7 +4,7 @@ import { Check, ExternalLink, X } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Spinner } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
-import AdminShell from './AdminShell';
+import AdminShell, { useLive } from './AdminShell';
 
 // Review companies that asked to be verified with their GSTIN.
 export default function AdminVerifications() {
@@ -20,6 +20,8 @@ export default function AdminVerifications() {
         setItems([]);
       });
   }, []);
+
+  useLive(() => api.get('/admin/verifications').then(({ data }) => setItems(data.companies)).catch(() => {}));
 
   const decide = async (c, approve) => {
     setBusy(c.id + approve);

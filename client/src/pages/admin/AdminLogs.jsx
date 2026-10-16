@@ -3,7 +3,7 @@ import { Search } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
-import AdminShell, { Pager, Pill } from './AdminShell';
+import AdminShell, { Pager, Pill, useLive } from './AdminShell';
 
 const when = (d) => new Date(d).toLocaleString('en-IN', { day: 'numeric', month: 'short', year: 'numeric', hour: 'numeric', minute: '2-digit' });
 const toneOf = (a) => (/delete|suspend|refund|reject|remove/.test(a) ? 'red' : /settings|admin\./.test(a) ? 'amber' : 'gray');
@@ -29,6 +29,7 @@ export default function AdminLogs() {
       .then(({ data }) => setData(data))
       .catch((err) => toast.error(errorMessage(err)));
   }, [query, page]);
+  useLive(() => api.get('/admin/logs', { params: { q: query, page } }).then(({ data }) => setData(data)).catch(() => {}));
 
   return (
     <AdminShell title="Activity log" subtitle="Who changed what, and when. Kept for every admin action.">

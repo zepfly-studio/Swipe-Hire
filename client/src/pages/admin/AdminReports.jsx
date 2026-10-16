@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import Illustration from '../../components/Illustration';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, Pager, Pill } from './AdminShell';
+import AdminShell, { dateOf, Pager, Pill, useLive } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const REASONS = { fake: 'Fake profile', spam: 'Spam', abuse: 'Abusive behaviour', scam: 'Scam / asks for money', inappropriate: 'Inappropriate content', other: 'Other' };
@@ -16,11 +16,12 @@ export default function AdminReports() {
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(null);
 
-  const load = () =>
+  const load = (quiet) =>
     api
       .get('/admin/reports', { params: { status, page } })
       .then(({ data }) => setData(data))
-      .catch((err) => toast.error(errorMessage(err)));
+      .catch((err) => quiet || toast.error(errorMessage(err)));
+  useLive(() => load(true));
   useEffect(() => {
     setData(null);
     load();

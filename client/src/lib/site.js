@@ -2,10 +2,12 @@ import { useEffect, useState } from 'react';
 import { api } from './api';
 import { ROLES, SKILLS } from './suggestions';
 import { CITIES, LOCATIONS } from './options';
+import { applyIntegrations } from './integrations';
 
 // Admin-editable public settings (GET /api/site): maintenance notice, FAQ / About text and
-// extra suggestion words. Loaded once at start; components subscribe with useSite().
-let site = { maintenance: { on: false, message: '' }, content: { faq: null, aboutIntro: '' }, taxonomy: { skills: [], cities: [], roles: [] } };
+// extra suggestion words and third-party tools. Loaded at start and checked again every minute
+// (and when the tab comes back into view), so admin changes show up without a refresh.
+let site = { maintenance: { on: false, message: '' }, content: { faq: null, aboutIntro: '' }, taxonomy: { skills: [], cities: [], roles: [] }, integrations: {} };
 const listeners = new Set();
 const emit = () => listeners.forEach((l) => l(site));
 
@@ -23,10 +25,19 @@ export async function loadSite() {
     addUnique(ROLES, data.taxonomy?.roles);
     addUnique(CITIES, data.taxonomy?.cities);
     addUnique(LOCATIONS, data.taxonomy?.cities);
+    applyIntegrations(data.integrations);
     emit();
   } catch {
     // the site works with the built-in defaults
   }
+}
+
+let watching = false;
+export function watchSite(ms = 60000) {
+  if (watching) return;
+  watching = true;
+  setInterval(() => document.visibilityState === 'visible' && loadSite(), ms);
+  document.addEventListener('visibilitychange', () => document.visibilityState === 'visible' && loadSite());
 }
 
 export function useSite() {

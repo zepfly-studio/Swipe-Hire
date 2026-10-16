@@ -5,7 +5,7 @@ import Avatar from '../../components/Avatar';
 import Modal from '../../components/Modal';
 import { Button, Field, Input, Spinner, StagePill, Textarea } from '../../components/ui';
 import { api, cx, errorMessage, fileUrl } from '../../lib/api';
-import { dateOf, lpa, Pill, useCan } from './AdminShell';
+import { dateOf, lpa, Pill, useCan, useLive } from './AdminShell';
 
 function Row({ label, value }) {
   if (value == null || value === '' || (Array.isArray(value) && !value.length)) return null;
@@ -167,6 +167,8 @@ export default function UserDetail({ id, onClose, onChanged }) {
         onClose();
       });
   };
+  // Stays current while open; paused while the admin is editing the profile.
+  useLive(() => api.get(`/admin/users/${id}`).then(({ data }) => setD(data)).catch(() => {}), { paused: !id || editing });
   useEffect(() => {
     if (id) load();
     setCredits('');

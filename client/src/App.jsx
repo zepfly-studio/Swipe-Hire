@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect } from 'react';
+import { lazy, Suspense, useEffect, useRef } from 'react';
 import { Navigate, Route, Routes, useLocation } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import Illustration from './components/Illustration';
@@ -9,6 +9,8 @@ import LandingPage from './pages/LandingPage';
 import { applyRouteMeta } from './lib/seo';
 import { AdminGuard } from './pages/admin/AdminShell';
 import { useSite } from './lib/site';
+import { applyIntegrations, trackPage } from './lib/integrations';
+import WhatsAppButton from './components/WhatsAppButton';
 
 const CandidateOnboarding = lazy(() => import('./pages/candidate/CandidateOnboarding'));
 const CandidateHome = lazy(() => import('./pages/candidate/CandidateHome'));
@@ -29,6 +31,7 @@ const AdminTickets = lazy(() => import('./pages/admin/AdminTickets'));
 const AdminAnnounce = lazy(() => import('./pages/admin/AdminAnnounce'));
 const AdminPlans = lazy(() => import('./pages/admin/AdminPlans'));
 const AdminSettings = lazy(() => import('./pages/admin/AdminSettings'));
+const AdminIntegrations = lazy(() => import('./pages/admin/AdminIntegrations'));
 const AdminContent = lazy(() => import('./pages/admin/AdminContent'));
 const AdminAdmins = lazy(() => import('./pages/admin/AdminAdmins'));
 const AdminLogs = lazy(() => import('./pages/admin/AdminLogs'));
@@ -130,12 +133,22 @@ export default function App() {
   const site = useSite();
   // Title, description, canonical and robots for each page.
   useEffect(() => applyRouteMeta(location.pathname), [location.pathname]);
+  // Admin-enabled third-party tools: start them on public pages and report page views
+  // (the first one is sent by the tools themselves when they load).
+  const firstPage = useRef(true);
+  useEffect(() => {
+    applyIntegrations(site.integrations);
+    if (firstPage.current) firstPage.current = false;
+    else trackPage(location.pathname);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname]);
   // Public pages (home, login) work without the API, so visitors and search engines still
   // see them if it's down; only the signed-in app shows the "can't reach" screen.
   if (offline && !['/', '/auth', '/about', '/adminlogin'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
   // Maintenance mode: admins keep working; the admin login stays reachable.
   if (site.maintenance.on && !user?.isAdmin && !location.pathname.startsWith('/admin')) return <MaintenanceScreen message={site.maintenance.message} />;
   return (
+    <>
     <AnimatePresence mode="wait">
       <Routes location={location} key={location.pathname}>
         <Route path="/" element={<Home />} />
@@ -177,6 +190,7 @@ export default function App() {
         <Route path="/admin/announce" element={<AdminGuard><Page><AdminAnnounce /></Page></AdminGuard>} />
         <Route path="/admin/plans" element={<AdminGuard><Page><AdminPlans /></Page></AdminGuard>} />
         <Route path="/admin/settings" element={<AdminGuard><Page><AdminSettings /></Page></AdminGuard>} />
+        <Route path="/admin/integrations" element={<AdminGuard><Page><AdminIntegrations /></Page></AdminGuard>} />
         <Route path="/admin/content" element={<AdminGuard><Page><AdminContent /></Page></AdminGuard>} />
         <Route path="/admin/admins" element={<AdminGuard><Page><AdminAdmins /></Page></AdminGuard>} />
         <Route path="/admin/logs" element={<AdminGuard><Page><AdminLogs /></Page></AdminGuard>} />
@@ -185,5 +199,7 @@ export default function App() {
         <Route path="*" element={<Page><NotFoundPage /></Page>} />
       </Routes>
     </AnimatePresence>
+    {site.integrations?.whatsapp && !location.pathname.startsWith('/admin') && <WhatsAppButton {...site.integrations.whatsapp} />}
+    </>
   );
 }

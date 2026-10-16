@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, ExportButton, Pager, Pill, useCan } from './AdminShell';
+import AdminShell, { dateOf, ExportButton, Pager, Pill, useCan, useLive } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const FILTERS = [
@@ -23,11 +23,12 @@ export default function AdminPayments() {
   const [status, mode] = FILTERS[filter];
   const can = useCan();
 
-  const load = () =>
+  const load = (quiet) =>
     api
       .get('/admin/payments', { params: { status, mode, page } })
       .then(({ data }) => setData(data))
-      .catch((err) => toast.error(errorMessage(err)));
+      .catch((err) => quiet || toast.error(errorMessage(err)));
+  useLive(() => load(true));
   useEffect(() => {
     setData(null);
     load();

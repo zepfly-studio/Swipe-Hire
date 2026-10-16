@@ -4,7 +4,7 @@ import { BadgeCheck, Briefcase, Building2, CalendarClock, IndianRupee, MessageCi
 import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, Pill } from './AdminShell';
+import AdminShell, { dateOf, Pill, useLive } from './AdminShell';
 import UserDetail from './UserDetail';
 
 // Chart colours validated for colour-blind separation (green vs blue).
@@ -110,6 +110,7 @@ export default function AdminOverview() {
   useEffect(() => {
     load();
   }, []);
+  useLive(() => api.get('/admin/stats').then(({ data }) => setS(data)).catch(() => {}));
 
   return (
     <AdminShell title="Overview" subtitle="Everything happening on Glide Recruit at a glance.">

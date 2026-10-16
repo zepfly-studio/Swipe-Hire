@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import Illustration from '../../components/Illustration';
 import { Button, Spinner, Textarea } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, Pager, Pill } from './AdminShell';
+import AdminShell, { dateOf, Pager, Pill, useLive } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const TABS = [['open', 'Open'], ['answered', 'Answered'], ['closed', 'Closed'], ['', 'All']];
@@ -20,16 +20,20 @@ export default function AdminTickets() {
   const [busy, setBusy] = useState('');
   const [user, setUser] = useState(null);
 
-  const load = () =>
+  const load = (quiet) =>
     api
       .get('/admin/tickets', { params: { status, page } })
       .then(({ data }) => setData(data))
-      .catch((err) => toast.error(errorMessage(err)));
+      .catch((err) => quiet || toast.error(errorMessage(err)));
+  useLive(() => load(true));
   useEffect(() => {
     setData(null);
     load();
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [status, page]);
+
+  // The open conversation picks up new messages too (the reply being typed is kept).
+  useLive(() => current && api.get(`/admin/tickets/${current.id}`).then(({ data }) => setCurrent(data.ticket)).catch(() => {}));
 
   const openTicket = (id) =>
     api

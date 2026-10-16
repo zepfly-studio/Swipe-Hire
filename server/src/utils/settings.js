@@ -36,12 +36,30 @@ export const taxonomyExtra = () => getSetting('taxonomy', { skills: [], cities: 
 // Editable public content: FAQ (null = the built-in one) and the About page intro.
 export const siteContent = () => getSetting('content', { faq: null, aboutIntro: '' });
 
+// Third-party tools switched on from the admin panel (analytics, chat widgets, WhatsApp button).
+export const INTEGRATION_DEFAULTS = {
+  googleAnalytics: { on: false, id: '' },
+  googleTagManager: { on: false, id: '' },
+  metaPixel: { on: false, id: '' },
+  clarity: { on: false, id: '' },
+  tawk: { on: false, id: '' },
+  crisp: { on: false, id: '' },
+  whatsapp: { on: false, number: '', text: '' },
+  custom: { on: false, code: '' },
+};
+export const integrations = () => ({ ...INTEGRATION_DEFAULTS, ...getSetting('integrations', {}) });
+
 // What the public website needs (GET /api/site).
 export function publicSite() {
   const m = maintenance();
+  // Only the tools that are on (and set up) are sent, so the website loads nothing extra.
+  const live = Object.fromEntries(
+    Object.entries(integrations()).filter(([, v]) => v.on && (v.id || v.number || v.code)),
+  );
   return {
     maintenance: { on: Boolean(m.on), message: m.message || '' },
     content: siteContent(),
     taxonomy: taxonomyExtra(),
+    integrations: live,
   };
 }

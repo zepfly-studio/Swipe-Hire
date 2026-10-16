@@ -1,7 +1,7 @@
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 import { Navigate, NavLink, useNavigate } from 'react-router-dom';
 import {
-  BarChart3, Briefcase, Building2, Crown, Download, ExternalLink, FileSearch, Flag, History, IndianRupee, LayoutDashboard, LifeBuoy, ListChecks, LogOut,
+  BarChart3, Briefcase, Building2, Crown, Download, ExternalLink, FileSearch, Flag, History, IndianRupee, LayoutDashboard, LifeBuoy, ListChecks, LogOut, Plug,
   Megaphone, Settings, ShieldCheck, UserCog, Users, UsersRound,
 } from 'lucide-react';
 import Background from '../../components/Background';
@@ -50,6 +50,7 @@ const GROUPS = [
     links: [
       { to: '/admin/settings', label: 'Settings', icon: Settings, perm: 'settings' },
       { to: '/admin/content', label: 'Content & lists', icon: ListChecks, perm: 'settings' },
+      { to: '/admin/integrations', label: 'Integrations', icon: Plug, perm: 'settings' },
       { to: '/admin/admins', label: 'Admin team', icon: UsersRound, perm: 'admins' },
       { to: '/admin/logs', label: 'Activity log', icon: History, perm: 'logs' },
     ],
@@ -92,6 +93,24 @@ export function ExportButton({ kind }) {
 }
 
 // Only signed-in admins get in; everyone else goes to the admin login page.
+// Keeps a page current without a reload: runs `refresh` every few seconds while the tab is
+// visible, and straight away when the admin comes back to the tab. `refresh` should update
+// quietly (no spinner, no error toasts). Pass `paused` while a form on the page is being edited.
+export function useLive(refresh, { ms = 12000, paused = false } = {}) {
+  const ref = useRef(refresh);
+  ref.current = refresh;
+  useEffect(() => {
+    if (paused) return undefined;
+    const tick = () => document.visibilityState === 'visible' && ref.current();
+    const t = setInterval(tick, ms);
+    document.addEventListener('visibilitychange', tick);
+    return () => {
+      clearInterval(t);
+      document.removeEventListener('visibilitychange', tick);
+    };
+  }, [ms, paused]);
+}
+
 export function AdminGuard({ children }) {
   const { loading, user } = useAuth();
   if (loading) return <Spinner className="min-h-dvh" />;
@@ -106,12 +125,16 @@ export default function AdminShell({ title, subtitle, actions, children }) {
   const [queues, setQueues] = useState({});
   const can = useCan();
 
-  useEffect(() => {
+  // Sidebar badges (open reports, tickets...) stay current on every page.
+  const loadQueues = () =>
     api
       .get('/admin/stats')
       .then(({ data }) => setQueues(data.queues || {}))
       .catch(() => {});
+  useEffect(() => {
+    loadQueues();
   }, []);
+  useLive(loadQueues);
 
   const signOut = () => {
     api.post('/admin-auth/logout').catch(() => {});

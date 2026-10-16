@@ -3,7 +3,7 @@ import { Bell, Megaphone } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Field, Input, Textarea } from '../../components/ui';
 import { api, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, useCan } from './AdminShell';
+import AdminShell, { dateOf, useCan, useLive } from './AdminShell';
 
 const AUDIENCE = { all: 'Everyone', candidates: 'All candidates', companies: 'All companies (owners and recruiters)' };
 
@@ -16,6 +16,7 @@ export default function AdminAnnounce() {
   const set = (k) => (e) => setForm((f) => ({ ...f, [k]: e?.target ? (e.target.type === 'checkbox' ? e.target.checked : e.target.value) : e }));
 
   const loadHistory = () => can('logs') && api.get('/admin/logs', { params: { q: 'announce' } }).then(({ data }) => setHistory(data.logs.filter((l) => l.action === 'announce'))).catch(() => {});
+  useLive(loadHistory);
   useEffect(() => {
     loadHistory();
     // eslint-disable-next-line react-hooks/exhaustive-deps

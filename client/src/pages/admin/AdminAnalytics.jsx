@@ -2,7 +2,7 @@ import { useEffect, useState } from 'react';
 import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell from './AdminShell';
+import AdminShell, { useLive } from './AdminShell';
 import { CHART, DayBars, RankBars } from './AdminCharts';
 
 const nf = new Intl.NumberFormat('en-IN');
@@ -29,6 +29,8 @@ export default function AdminAnalytics() {
       .then(({ data }) => setD(data))
       .catch((err) => toast.error(errorMessage(err)));
   }, [days]);
+
+  useLive(() => api.get('/admin/analytics', { params: { days } }).then(({ data }) => setD(data)).catch(() => {}), { ms: 30000 });
 
   const sum = (k) => d?.series.reduce((a, x) => a + x[k], 0) ?? 0;
   const pct = (a, b) => (b ? `${Math.round((a / b) * 100)}%` : '–');

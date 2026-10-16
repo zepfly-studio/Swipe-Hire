@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import { Button, Field, Input, Spinner } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { api, errorMessage } from '../../lib/api';
-import AdminShell, { Pill } from './AdminShell';
+import AdminShell, { Pill, useLive } from './AdminShell';
 
 const ROLES = {
   super: 'Everything, including settings, plans and the admin team. Set in the server’s ADMIN_EMAILS.',
@@ -20,7 +20,8 @@ export default function AdminAdmins() {
   const [role, setRole] = useState('moderator');
   const [busy, setBusy] = useState(false);
 
-  const load = () => api.get('/admin/admins').then(({ data }) => setList(data.admins)).catch((err) => toast.error(errorMessage(err)));
+  const load = (quiet) => api.get('/admin/admins').then(({ data }) => setList(data.admins)).catch((err) => quiet || toast.error(errorMessage(err)));
+  useLive(() => load(true));
   useEffect(() => {
     load();
   }, []);

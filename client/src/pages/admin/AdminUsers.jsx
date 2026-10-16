@@ -5,7 +5,7 @@ import Avatar from '../../components/Avatar';
 import Modal from '../../components/Modal';
 import { Button, Field, Input, Spinner, Textarea } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, ExportButton, lpa, Pager, Pill, useCan } from './AdminShell';
+import AdminShell, { dateOf, ExportButton, lpa, Pager, Pill, useCan, useLive } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const CONFIG = {
@@ -112,6 +112,17 @@ export default function AdminUsers({ role }) {
         setSelected(new Set());
       })
       .catch((err) => toast.error(errorMessage(err)));
+  // Quiet refresh keeps the ticked rows that are still on the page.
+  useLive(() =>
+    api
+      .get('/admin/users', { params: { role, status, q: query, page } })
+      .then(({ data }) => {
+        setData(data);
+        const ids = new Set(data.users.map((u) => u.id));
+        setSelected((sel) => new Set([...sel].filter((id) => ids.has(id))));
+      })
+      .catch(() => {}),
+  );
   useEffect(() => {
     setData(null);
     load();

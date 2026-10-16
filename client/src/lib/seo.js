@@ -57,6 +57,7 @@ const PRIVATE_TITLES = {
   '/admin/plans': 'Admin · Plans',
   '/admin/settings': 'Admin · Settings',
   '/admin/content': 'Admin · Content & lists',
+  '/admin/integrations': 'Admin · Integrations',
   '/admin/admins': 'Admin · Admin team',
   '/admin/logs': 'Admin · Activity log',
   '/support': 'Help & support',

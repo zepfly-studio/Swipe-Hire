@@ -24,7 +24,7 @@ import { text } from '../utils/fields.js';
 import { adminRoleOf, isAdminEmail, logAdmin } from '../utils/adminAccess.js';
 import {
   adminTwoStep, demoPaymentsOn, getFreeSwipes, getPlans, getSetting, maintenance, requireJobApproval, setSetting, showEmailCodeOn,
-  siteContent, taxonomyExtra,
+  siteContent, taxonomyExtra, integrations,
 } from '../utils/settings.js';
 
 // More admin tools. Mounted inside routes/admin.js, after its admin-login check.
@@ -507,6 +507,60 @@ router.put('/settings/taxonomy', perm('settings'), async (req, res) => {
   await setSetting('taxonomy', taxonomy, req.user.id);
   await logAdmin(req, 'settings.taxonomy', { targetType: 'setting', summary: `${taxonomy.skills.length} skills, ${taxonomy.cities.length} cities, ${taxonomy.roles.length} roles` });
   res.json({ ok: true, taxonomy });
+});
+
+// ---- third-party integrations ----
+// Each ID goes into a script URL on the public site, so only the provider's own format is
+// accepted. Pasted embed snippets/URLs are reduced to the ID.
+const INTEGRATION_IDS = {
+  googleAnalytics: { rx: /\b(G-[A-Z0-9]{4,20})\b/i, label: 'Google Analytics ID (G-XXXXXXX)', up: true },
+  googleTagManager: { rx: /\b(GTM-[A-Z0-9]{4,12})\b/i, label: 'Tag Manager ID (GTM-XXXXXX)', up: true },
+  metaPixel: { rx: /^\s*(\d{6,20})\s*$|fbq\('init',\s*'(\d{6,20})'/, label: 'Meta Pixel ID (numbers only)' },
+  clarity: { rx: /clarity\.ms\/tag\/([a-z0-9]{6,20})|^\s*([a-z0-9]{6,20})\s*$/i, label: 'Clarity project ID' },
+  tawk: { rx: /([a-f0-9]{24}\/[a-z0-9]{6,12})/i, label: 'Tawk.to property/widget ID (e.g. 64ab…/1h2k3l)' },
+  crisp: { rx: /([0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12})/i, label: 'Crisp website ID' },
+};
+
+router.get('/settings/integrations', perm('settings'), (req, res) => {
+  res.json({ integrations: integrations(), canEditCode: req.admin.role === 'super' });
+});
+
+router.put('/settings/integrations', perm('settings'), async (req, res) => {
+  const b = req.body ?? {};
+  const next = integrations();
+  const changed = [];
+  for (const [key, { rx, label, up }] of Object.entries(INTEGRATION_IDS)) {
+    if (!b[key]) continue;
+    const raw = String(b[key].id ?? next[key].id ?? '').trim();
+    let id = '';
+    if (raw) {
+      const m = raw.match(rx);
+      id = m && (m[1] || m[2]);
+      if (!id) throw new HttpError(400, `Enter a valid ${label}`, { field: key });
+      if (up) id = id.toUpperCase();
+    }
+    const on = Boolean(b[key].on) && Boolean(id);
+    if (on !== next[key].on || id !== next[key].id) changed.push(`${key} ${on ? 'on' : 'off'}`);
+    next[key] = { on, id };
+  }
+  if (b.whatsapp) {
+    const number = String(b.whatsapp.number ?? '').replace(/[^\d]/g, '');
+    if (number && (number.length < 10 || number.length > 15)) throw new HttpError(400, 'Enter the WhatsApp number with country code, e.g. 919876543210', { field: 'whatsapp' });
+    const w = { on: Boolean(b.whatsapp.on) && Boolean(number), number, text: text(b.whatsapp.text, 200) || '' };
+    if (JSON.stringify(w) !== JSON.stringify(next.whatsapp)) changed.push(`whatsapp ${w.on ? 'on' : 'off'}`);
+    next.whatsapp = w;
+  }
+  if (b.custom) {
+    // Raw code runs on every visitor's browser, so only super admins may change it.
+    if (req.admin.role !== 'super') throw new HttpError(403, 'Only a super admin can change custom code', { field: 'custom' });
+    const code = String(b.custom.code ?? '').slice(0, 20000);
+    const c = { on: Boolean(b.custom.on) && Boolean(code.trim()), code };
+    if (JSON.stringify(c) !== JSON.stringify(next.custom)) changed.push(`custom code ${c.on ? 'on' : 'off'}`);
+    next.custom = c;
+  }
+  await setSetting('integrations', next, req.user.id);
+  if (changed.length) await logAdmin(req, 'settings.integrations', { targetType: 'setting', summary: changed.join(', ') });
+  res.json({ ok: true, integrations: next });
 });
 
 

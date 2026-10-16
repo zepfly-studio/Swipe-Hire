@@ -3,7 +3,7 @@ import { BadgeCheck, Search, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, ExportButton, lpa, Pager, Pill, useCan } from './AdminShell';
+import AdminShell, { dateOf, ExportButton, lpa, Pager, Pill, useCan, useLive } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const STATUSES = [['', 'All'], ['pending', 'Awaiting approval'], ['flagged', 'Flagged'], ['open', 'Open'], ['paused', 'Paused'], ['closed', 'Closed']];
@@ -25,11 +25,12 @@ export default function AdminJobs() {
     }, 350);
     return () => clearTimeout(t);
   }, [q]);
-  const load = () =>
+  const load = (quiet) =>
     api
       .get('/admin/jobs', { params: { q: query, status, page } })
       .then(({ data }) => setData(data))
-      .catch((err) => toast.error(errorMessage(err)));
+      .catch((err) => quiet || toast.error(errorMessage(err)));
+  useLive(() => load(true));
   useEffect(() => {
     setData(null);
     load();

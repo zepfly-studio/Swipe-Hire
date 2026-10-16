@@ -4,7 +4,7 @@ import toast from 'react-hot-toast';
 import Illustration from '../../components/Illustration';
 import { Spinner } from '../../components/ui';
 import { api, cx, errorMessage, fileUrl } from '../../lib/api';
-import AdminShell, { dateOf, Pager, Pill } from './AdminShell';
+import AdminShell, { dateOf, Pager, Pill, useLive } from './AdminShell';
 import UserDetail from './UserDetail';
 
 const TABS = [['live', 'Latest uploads'], ['removed', 'Removed']];
@@ -17,11 +17,12 @@ export default function AdminReview() {
   const [data, setData] = useState(null);
   const [open, setOpen] = useState(null);
 
-  const load = () =>
+  const load = (quiet) =>
     api
       .get('/admin/review', { params: { status, page } })
       .then(({ data }) => setData(data))
-      .catch((err) => toast.error(errorMessage(err)));
+      .catch((err) => quiet || toast.error(errorMessage(err)));
+  useLive(() => load(true));
   useEffect(() => {
     setData(null);
     load();
