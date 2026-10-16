@@ -156,7 +156,6 @@ export default function SwipePage() {
   const jobRef = useRef(params.get('job'));
   const [searches, setSearches] = useState([]);
   const [activeSearchId, setActiveSearchId] = useState(initial?.searchId || '');
-  const [undoable, setUndoable] = useState(0); // swipes made on this screen that can be taken back
   const [undoing, setUndoing] = useState(false);
   const [returning, setReturning] = useState(null); // { id, from } card flying back after undo
 
@@ -224,7 +223,6 @@ export default function SwipePage() {
     setActiveSearchId(searchId);
     writeSaved(savedKey, { filters: next, searchId });
     jobRef.current = null;
-    setUndoable(0);
     resetFeed();
   };
 
@@ -288,7 +286,6 @@ export default function SwipePage() {
       api
         .post('/company/swipe', { candidateId: top.id, action: dir > 0 ? 'right' : 'left', jobId: jobRef.current })
         .then(({ data }) => {
-          setUndoable((n) => n + 1);
           // Replies can arrive out of order; while other swipes are in flight keep the lowest count.
           setProfile((p) => ({
             ...p,
@@ -323,15 +320,14 @@ export default function SwipePage() {
     try {
       const { data } = await api.post('/company/swipe/undo');
       setProfile((p) => ({ ...p, swipesLeft: data.swipesLeft }));
-      setUndoable((n) => Math.max(0, n - 1));
-      if (data.card && data.jobId === jobRef.current) {
+      // The card comes back on top, even if the filters changed since that swipe.
+      if (data.card) {
         setReturning({ id: data.card.id, from: data.action === 'right' ? 1 : -1 });
         setCards((c) => [data.card, ...c.filter((x) => x.id !== data.card.id)]);
         if (window.scrollY > 0) window.scrollTo({ top: 0, behavior: 'smooth' });
       }
       toast.success(data.action === 'right' ? 'Shortlist undone. Its swipe is not refunded, as contact details were shown.' : 'Pass undone, swipe refunded', { id: 'undo' });
     } catch (err) {
-      if (err.response?.status === 404) setUndoable(0);
       toast.error(errorMessage(err), { id: 'undo' });
     } finally {
       setUndoing(false);
@@ -531,7 +527,7 @@ export default function SwipePage() {
               label="Undo last swipe"
               size="sm"
               onClick={undo}
-              disabled={!undoable || undoing}
+              disabled={undoing}
               className="border-amber-300/40 text-amber-300 hover:bg-amber-300 hover:text-ink-950"
             >
               <RotateCcw size={19} strokeWidth={2.5} />

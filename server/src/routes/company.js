@@ -238,18 +238,24 @@ router.post('/swipe', async (req, res) => {
   });
 });
 
-// Takes back your most recent swipe (within 10 minutes). A pass is refunded; a shortlist
-// isn't, because its contact details were already shown (else undo would make them free).
+// Takes back your most recent swipe: a pass within 24 hours (refunded, the card comes back),
+// a shortlist within 10 minutes (not refunded: its contact details were already shown, else
+// undo would make them free). Pressing undo again goes one more swipe back.
+const UNDO_PASS_MS = 24 * 60 * 60 * 1000;
+const UNDO_SHORTLIST_MS = 10 * 60 * 1000;
 router.post('/swipe/undo', async (req, res) => {
   const cid = req.user.companyId;
   const last = await Swipe.findOne({
     company: cid,
     swipedBy: req.user.id,
-    createdAt: { $gte: new Date(Date.now() - 10 * 60 * 1000) },
+    createdAt: { $gte: new Date(Date.now() - UNDO_PASS_MS) },
   }).sort({ createdAt: -1 });
   if (!last) throw new HttpError(404, 'There is no recent swipe to undo');
 
   if (last.action === 'right') {
+    if (Date.now() - last.createdAt > UNDO_SHORTLIST_MS) {
+      throw new HttpError(409, 'Your last swipe was a shortlist more than 10 minutes ago. Remove them from the Shortlisted page instead.');
+    }
     const pair = { company: cid, candidate: last.candidate };
     const contacted =
       last.stage !== 'shortlisted' ||
