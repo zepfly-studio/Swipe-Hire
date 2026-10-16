@@ -158,7 +158,7 @@ function Form({
       <div className="flex items-center justify-between border-b border-white/10 p-5">
         <div>
           <h2 className="text-xl font-extrabold">Filter candidates</h2>
-          <p className="text-sm text-white/50">Only matching candidates will appear in your stack</p>
+          <p className="text-sm text-white/50">Role and city decide who you see; the rest puts the best matches on top</p>
         </div>
         <button onClick={onClose} className="btn-ghost p-2" aria-label="Close">
           <X size={18} />
@@ -187,7 +187,7 @@ function Form({
           />
         </Field>
         <Field label="City">
-          <LocationInput value={f.location} onChange={set('location')} placeholder="e.g. Jaipur, Delhi or All India" />
+          <LocationInput value={f.location} onChange={set('location')} placeholder="e.g. Jaipur, Rajasthan or All India" />
         </Field>
         <div className="grid grid-cols-2 gap-4">
           <Field label="Min experience (yrs)">
@@ -203,7 +203,7 @@ function Form({
           </Field>
           <Field
             label="Max salary (LPA)"
-            hint={f.maxSalary === '' ? 'Hides people already earning more. Open-to-negotiate people up to 20% above are shown.' : salaryHint(f.maxSalary)}
+            hint={f.maxSalary === '' ? 'People inside your budget come first, then those asking less, then those asking more' : salaryHint(f.maxSalary)}
           >
             <Input type="number" min={0} inputMode="decimal" value={f.maxSalary} onChange={set('maxSalary')} placeholder="Any" />
           </Field>
@@ -214,7 +214,7 @@ function Form({
         <Field label="Notice period" as="div">
           <MultiChipSelect options={NOTICE} value={f.notice} onChange={set('notice')} />
         </Field>
-        <Field label="Must have any of these skills" as="div">
+        <Field label="Skills you want" hint="People with more of these skills come first" as="div">
           <TagInput value={f.skills} onChange={set('skills')} placeholder="React, Excel…" />
         </Field>
         <div className="rounded-2xl bg-white/[0.03] p-4 ring-1 ring-white/5">

@@ -18,8 +18,7 @@ import { withSignedFiles } from '../utils/signedUrl.js';
 import { num, text, requireFields, stripUndefined } from '../utils/fields.js';
 import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { storeUpload } from '../utils/storage.js';
-import { feedFilters, hasFilters, normalizeFilters, toCard } from '../utils/candidates.js';
-import { salaryFits, salaryFitWhere } from '../utils/match.js';
+import { feedFilters, filterScore, hasFilters, normalizeFilters, strictFilters, toCard } from '../utils/candidates.js';
 import { feedRank } from '../utils/activity.js';
 import { publicJob, resolveFilterJob, resolveJob } from '../utils/jobs.js';
 import { notify } from '../utils/notify.js';
@@ -157,23 +156,25 @@ router.get('/feed', async (req, res) => {
     step: 3,
     openToWork: { $ne: false }, suspended: { $ne: true },
     user: { $nin: [...swiped, ...exclude] },
-    $and: [feedFilters(req.query), salaryFitWhere(job)],
+    ...feedFilters(req.query),
   })
     .populate('user', 'name avatarUrl')
     .sort({ activeAt: -1 })
     .limit(500)
     .lean();
 
-  // Active candidates first (stale ones, who haven't confirmed "still looking", sink to the
-  // bottom), then best match, with a small boost for people who joined this week.
+  // Best match with the filters first (experience, skills, notice, salary, work mode);
+  // on a tie, active candidates before stale ones, then new joiners and the rest.
   const now = Date.now();
   const candidates = profiles
     .filter((p) => p.user)
     .map((p) => {
       const card = toCard(p, job, { wishlisted: wish.has(String(p.user._id)) });
+      const score = filterScore(p, req.query);
+      if (score !== null) card.matchScore = score;
       return { card, rank: feedRank(p, card.matchScore, now) };
     })
-    .sort((a, b) => a.rank.stale - b.rank.stale || b.rank.score - a.rank.score)
+    .sort((a, b) => b.card.matchScore - a.card.matchScore || a.rank.stale - b.rank.stale || b.rank.score - a.rank.score)
     .slice(0, limit)
     .map((x) => x.card);
 
@@ -185,7 +186,7 @@ router.get('/feed', async (req, res) => {
       step: 3,
       openToWork: { $ne: false }, suspended: { $ne: true },
       user: { $in: swiped },
-      $and: [feedFilters(req.query), salaryFitWhere(job)],
+      ...feedFilters(req.query),
     }).distinct('user');
     if (matched.length) {
       const shortlisted = (await Swipe.find({ company: req.user.companyId, candidate: { $in: matched }, action: 'right' }).distinct('candidate')).length;
@@ -206,14 +207,6 @@ router.post('/swipe', async (req, res) => {
   if (!candidate?.user) throw new HttpError(404, 'Candidate not found');
   const job = await resolveJob(cid, jobId);
   if (job.approved === false) throw new HttpError(409, 'This job is waiting for approval by the Glide Recruit team.', { code: 'JOB_PENDING' });
-  if (action === 'right' && !salaryFits(candidate, job)) {
-    throw new HttpError(
-      409,
-      `${candidate.user.name.split(' ')[0]}'s salary expectation (or current salary) is above your budget of ₹${job.salaryMax} LPA.`,
-      { code: 'SALARY_MISMATCH' },
-    );
-  }
-
   if (await Swipe.exists({ company: cid, candidate: candidateId })) {
     throw new HttpError(409, 'You have already swiped this candidate');
   }
@@ -452,7 +445,7 @@ router.post('/searches', async (req, res) => {
     throw new HttpError(400, 'You can save up to 20 searches. Delete one first.');
   }
   // Candidates who already match are not "new" — don't alert for them.
-  const existing = await CandidateProfile.find({ step: 3, suspended: { $ne: true }, ...feedFilters(filters) }).distinct('user');
+  const existing = await CandidateProfile.find({ step: 3, suspended: { $ne: true }, ...strictFilters(filters) }).distinct('user');
   const s = await SavedSearch.create({
     company: req.user.companyId,
     createdBy: req.user.id,
@@ -479,7 +472,7 @@ router.patch('/searches/:id', async (req, res) => {
     const existing = await CandidateProfile.find({
       step: 3,
       suspended: { $ne: true },
-      ...feedFilters(filters),
+      ...strictFilters(filters),
     }).distinct('user');
     update.filters = filters;
     update.notifiedCandidates = existing.slice(-5000);

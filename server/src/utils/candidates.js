@@ -1,6 +1,7 @@
 import { pick, cleanList } from './pick.js';
 import { signUrl, withSignedFiles } from './signedUrl.js';
 import { matchCandidate, NEGOTIATE_MARGIN } from './match.js';
+import { STATE_CITIES, stateKey } from '../../../shared/states.js';
 
 // What a company may see about a candidate (no phone/email until shortlisted).
 // Age and gender are collected but never shown to companies, to avoid biased hiring.
@@ -32,7 +33,7 @@ const roleWords = (role) => role.toLowerCase().split(/[\s/&()-]+/).filter((w) =>
 // Titles people use for the same kind of job. Searching the first title of a group also
 // finds the rest, so "Web Developer" finds Frontend and Full Stack developers too.
 const ROLE_FAMILIES = [
-  ['web developer', 'frontend developer', 'front end developer', 'full stack developer', 'fullstack developer', 'react developer', 'mern stack developer', 'javascript developer', 'ui developer', 'wordpress developer', 'php developer'],
+  ['web developer', 'website developer', 'frontend developer', 'front end developer', 'backend developer', 'back end developer', 'full stack developer', 'fullstack developer', 'react developer', 'mern stack developer', 'javascript developer', 'ui developer', 'wordpress developer', 'php developer'],
   ['frontend developer', 'front end developer', 'web developer', 'react developer', 'ui developer', 'angular developer', 'javascript developer'],
   ['full stack developer', 'fullstack developer', 'mern stack developer', 'mean stack developer', 'web developer'],
   ['backend developer', 'back end developer', 'node.js developer', 'java developer', 'python developer', 'php developer', 'golang developer'],
@@ -56,6 +57,10 @@ const ROLE_FAMILIES = [
   ['content writer', 'copywriter', 'web content writer', 'technical writer'],
   ['video editor', 'motion graphics designer', 'animator', 'video producer'],
 ];
+
+// Whole-word patterns for each meaningful word of a title.
+const titleRegexes = (title) =>
+  (roleWords(title).length ? roleWords(title) : [title]).map((w) => new RegExp(`(^|[^a-z0-9])${escapeRegex(w)}($|[^a-z0-9])`, 'i'));
 
 // One title -> every meaningful word must appear in the headline, current post or skills.
 function titleWhere(title) {
@@ -107,15 +112,81 @@ export function hasFilters(f = {}) {
   );
 }
 
-// Filters -> extra Mongo conditions on CandidateProfile.
+// Location: "All India" = everywhere; a state ("Rajasthan") also covers its cities
+// (Jaipur, Sikar, Kota…); a city matches where they live or the cities they're open to.
+function locationWhere(location) {
+  const state = stateKey(location);
+  const rx = state
+    ? new RegExp(`(^|[^a-z])(${[state, ...STATE_CITIES[state]].map(escapeRegex).join('|')})($|[^a-z])`, 'i')
+    : new RegExp(escapeRegex(location), 'i');
+  return { $or: [{ location: rx }, { preferredLocations: rx }] };
+}
+
+// Swipe feed: only role and location decide who is shown. Experience, salary, notice,
+// skills and work mode decide the order (see filterScore), so nobody is hidden by them.
 export function feedFilters(q) {
+  const f = normalizeFilters(q);
+  const and = [];
+  if (f.location && f.location !== ALL_INDIA) and.push(locationWhere(f.location));
+  const roles = splitTerms(f.role);
+  if (roles.length) and.push({ $or: roles.map(roleWhere) });
+  return and.length ? { $and: and } : {};
+}
+
+// How well a candidate fits the filters, 0-100; the feed shows the best first.
+// Only the filters the company set count. Each one gives 0-1:
+// - role: their own title matches the searched words 1, a related title 0.7
+// - experience: inside the range 1; more than the max next (0.8, less per extra year);
+//   less than the min last
+// - skills: share of the asked skills they have
+// - notice: Immediate first, then 15, 30, 60, 90 days
+// - salary (expected): inside the budget 1; asking less next; asking more last
+// - work mode: the one asked 1, no preference 0.8, other 0.2
+const WEIGHTS = { role: 15, experience: 25, skills: 30, notice: 15, salary: 20, workMode: 10 };
+const NOTICE_VALUE = { Immediate: 1, '15 days': 0.85, '30 days': 0.65, '60 days': 0.4, '90 days': 0.15 };
+export function filterScore(p, q) {
+  const f = normalizeFilters(q);
+  const parts = [];
+  const roles = splitTerms(f.role);
+  if (roles.length) {
+    const own = roles.some((r) => titleRegexes(r).every((rx) => rx.test(p.headline || '') || rx.test(p.currentPost || '')));
+    parts.push(['role', own ? 1 : 0.7]);
+  }
+  if (f.minExp !== null || f.maxExp !== null) {
+    const y = p.experienceYears ?? 0;
+    const lo = f.minExp ?? 0;
+    const hi = f.maxExp ?? Infinity;
+    parts.push(['experience', y >= lo && y <= hi ? 1 : y > hi ? Math.max(0.35, 0.85 - 0.08 * (y - hi)) : Math.max(0, 0.3 - 0.1 * (lo - y))]);
+  }
+  if (f.skills.length) {
+    const have = new Set((p.skills || []).map((s) => s.toLowerCase()));
+    parts.push(['skills', f.skills.filter((s) => have.has(s.toLowerCase())).length / f.skills.length]);
+  }
+  if (f.notice.length) parts.push(['notice', NOTICE_VALUE[p.noticePeriod] ?? 0.5]);
+  if (f.minSalary !== null || f.maxSalary !== null) {
+    const s = p.expectedSalary;
+    const lo = f.minSalary ?? 0;
+    const hi = f.maxSalary ?? Infinity;
+    let v = 0.5;
+    if (s != null) v = s >= lo && s <= hi ? 1 : s < lo ? Math.max(0.5, 0.85 - 0.05 * (lo - s)) : Math.max(0, 0.45 - 0.05 * (s - hi) + (p.salaryNegotiable ? 0.05 : 0));
+    parts.push(['salary', v]);
+  }
+  if (f.workMode) {
+    const modes = p.workModes || [];
+    parts.push(['workMode', !modes.length ? 0.8 : modes.includes(f.workMode) ? 1 : 0.2]);
+  }
+  if (!parts.length) return null;
+  const total = parts.reduce((a, [k]) => a + WEIGHTS[k], 0);
+  return Math.round((100 * parts.reduce((a, [k, v]) => a + WEIGHTS[k] * v, 0)) / total);
+}
+
+// Every filter as a hard condition: used for saved-search alerts ("a new candidate matches
+// all of these"). The swipe feed only uses role and location as hard conditions.
+export function strictFilters(q) {
   const f = normalizeFilters(q);
   const where = {};
   const and = [];
-  if (f.location && f.location !== ALL_INDIA) {
-    const rx = new RegExp(escapeRegex(f.location), 'i');
-    and.push({ $or: [{ location: rx }, { preferredLocations: rx }] });
-  }
+  if (f.location && f.location !== ALL_INDIA) and.push(locationWhere(f.location));
   if (f.role) {
     const roles = splitTerms(f.role).filter(Boolean);
     if (roles.length) {

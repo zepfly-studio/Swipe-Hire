@@ -1,6 +1,6 @@
 import { SavedSearch } from '../models/SavedSearch.js';
 import { CandidateProfile } from '../models/CandidateProfile.js';
-import { feedFilters } from './candidates.js';
+import { strictFilters } from './candidates.js';
 import { notifyCompany } from './notify.js';
 
 // Call when a candidate goes live or changes their profile. Every saved search
@@ -14,7 +14,7 @@ export async function alertSavedSearches(candidateId) {
 
     const searches = await SavedSearch.find({ alerts: true, notifiedCandidates: { $ne: candidateId } }).lean();
     for (const s of searches) {
-      const match = await CandidateProfile.exists({ _id: profile._id, ...feedFilters(s.filters || {}) });
+      const match = await CandidateProfile.exists({ _id: profile._id, ...strictFilters(s.filters || {}) });
       if (!match) continue;
       // Claim first so two profile saves at once can't alert twice.
       const claimed = await SavedSearch.updateOne(
