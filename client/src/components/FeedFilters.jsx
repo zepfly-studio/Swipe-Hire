@@ -4,7 +4,7 @@ import Modal from './Modal';
 import Autocomplete from './Autocomplete';
 import LocationInput from './LocationInput';
 import TagInput from './TagInput';
-import { Button, ChipSelect, Field, Input, MultiChipSelect } from './ui';
+import { Button, Field, Input, MultiChipSelect } from './ui';
 import { cx, salaryHint, toLpa } from '../lib/api';
 import { ROLES, searchRoles } from '../lib/suggestions';
 
@@ -15,7 +15,7 @@ export const EMPTY_FILTERS = {
   maxExp: '',
   minSalary: '',
   maxSalary: '',
-  workMode: '',
+  workModes: [],
   notice: [],
   skills: [],
 };
@@ -27,7 +27,8 @@ const WORK_MODES = [
 ];
 
 export const countFilters = (f) =>
-  [f.role, f.location, f.minExp, f.maxExp, f.minSalary, f.maxSalary, f.workMode].filter((v) => v !== '' && v != null).length +
+  [f.role, f.location, f.minExp, f.maxExp, f.minSalary, f.maxSalary].filter((v) => v !== '' && v != null).length +
+  (f.workModes?.length ? 1 : 0) +
   (f.notice?.length ? 1 : 0) +
   (f.skills?.length ? 1 : 0);
 
@@ -48,7 +49,7 @@ export function filterParams(f) {
   const [minSalary, maxSalary] = range(f.minSalary === '' ? '' : toLpa(f.minSalary), f.maxSalary === '' ? '' : toLpa(f.maxSalary));
   if (minSalary !== '') p.minSalary = minSalary;
   if (maxSalary !== '') p.maxSalary = maxSalary;
-  if (f.workMode) p.workMode = f.workMode;
+  if (f.workModes?.length) p.workModes = f.workModes.join(',');
   if (f.notice.length) p.notice = f.notice.join(',');
   if (f.skills.length) p.skills = f.skills.join(',');
   return p;
@@ -63,7 +64,8 @@ export const fromSaved = (s = {}) => ({
   maxExp: s.maxExp ?? '',
   minSalary: s.minSalary ?? '',
   maxSalary: s.maxSalary ?? '',
-  workMode: s.workMode || '',
+  // Older saved searches had one work mode.
+  workModes: s.workModes?.length ? s.workModes : s.workMode ? [s.workMode] : [],
   notice: s.notice ?? [],
   skills: s.skills ?? [],
 });
@@ -209,7 +211,7 @@ function Form({
           </Field>
         </div>
         <Field label="Work mode" as="div">
-          <ChipSelect layoutId="filter-work-mode" options={WORK_MODES} value={f.workMode} onChange={set('workMode')} />
+          <MultiChipSelect options={WORK_MODES} value={f.workModes} onChange={set('workModes')} />
         </Field>
         <Field label="Notice period" as="div">
           <MultiChipSelect options={NOTICE} value={f.notice} onChange={set('notice')} />

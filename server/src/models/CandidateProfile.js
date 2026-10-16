@@ -50,4 +50,7 @@ const candidateProfileSchema = new mongoose.Schema(
   { timestamps: true },
 );
 
+// The swipe feed and saved-search alerts look up live, visible candidates.
+candidateProfileSchema.index({ step: 1, openToWork: 1, suspended: 1 });
+
 export const CandidateProfile = mongoose.model('CandidateProfile', candidateProfileSchema);

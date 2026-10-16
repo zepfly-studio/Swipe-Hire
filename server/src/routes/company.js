@@ -18,7 +18,7 @@ import { withSignedFiles } from '../utils/signedUrl.js';
 import { num, text, requireFields, stripUndefined } from '../utils/fields.js';
 import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { storeUpload } from '../utils/storage.js';
-import { fallbackFilters, feedFilters, filterScore, hasFilters, normalizeFilters, strictFilters, toCard } from '../utils/candidates.js';
+import { fallbackFilters, feedFilters, filterScore, hasFilters, normalizeFilters, strictFilters, toCard, validateFilters } from '../utils/candidates.js';
 import { feedRank } from '../utils/activity.js';
 import { publicJob, resolveFilterJob, resolveJob } from '../utils/jobs.js';
 import { notify } from '../utils/notify.js';
@@ -130,6 +130,8 @@ router.get('/feed', async (req, res) => {
   if (!company.completed) throw new HttpError(403, 'Please complete your company profile first');
   const filters = normalizeFilters(req.query);
   if (!hasFilters(filters)) throw new HttpError(400, 'Apply at least one filter before viewing candidates', { code: 'FILTER_REQUIRED' });
+  const invalid = validateFilters(filters);
+  if (invalid) throw new HttpError(400, invalid, { code: 'BAD_FILTER' });
   const job = req.query.jobId
     ? await resolveJob(req.user.companyId, req.query.jobId)
     : await resolveFilterJob(req.user.companyId, filters);
@@ -150,33 +152,41 @@ router.get('/feed', async (req, res) => {
   ]);
   const wish = new Set(wishlisted.map(String));
 
-  // Candidates the job can't afford (and who won't negotiate) can't be shortlisted, so
-  // they aren't shown at all: no swipe credits are spent on them.
-  // Best match with the filters first (experience, skills, notice, salary, work mode);
-  // on a tie, active candidates before stale ones, then new joiners and the rest.
+  // Best match with the filters first (experience, skills, notice, salary, work mode); on a
+  // tie, active candidates before stale ones, then new joiners, then the most recently active,
+  // then a fixed order (id), so the same filters always give the same order and pages never
+  // repeat or skip anyone. Every matching candidate is scored (only the fields scoring needs),
+  // then just the page that is shown is loaded in full.
   const now = Date.now();
+  const SCORE_FIELDS = 'user headline currentPost skills experienceYears expectedSalary expectedSalaryMax salaryNegotiable noticePeriod workModes activeAt updatedAt createdAt';
   const find = async (where, extra = {}) => {
-    const profiles = await CandidateProfile.find({
+    const light = await CandidateProfile.find({
       step: 3,
       openToWork: { $ne: false }, suspended: { $ne: true },
       user: { $nin: [...swiped, ...exclude] },
       ...where,
     })
-      .populate('user', 'name avatarUrl')
-      .sort({ activeAt: -1 })
-      .limit(500)
+      .select(SCORE_FIELDS)
+      .sort({ activeAt: -1 }) // past 5000 matches, the most recently active are scored
+      .limit(5000)
       .lean();
-    return profiles
-      .filter((p) => p.user)
-      .map((p) => {
-        const card = toCard(p, job, { wishlisted: wish.has(String(p.user._id)), ...extra });
-        const score = filterScore(p, req.query);
-        if (score !== null) card.matchScore = score;
-        return { card, rank: feedRank(p, card.matchScore, now) };
-      })
-      .sort((a, b) => b.card.matchScore - a.card.matchScore || a.rank.stale - b.rank.stale || b.rank.score - a.rank.score)
-      .slice(0, limit)
-      .map((x) => x.card);
+    const scored = light.map((p) => {
+      const score = filterScore(p, req.query);
+      return { id: String(p.user), score, rank: feedRank(p, score ?? 0, now), active: new Date(p.activeAt ?? p.updatedAt ?? 0).getTime() };
+    });
+    const order = scored
+      .sort((a, b) => (b.score ?? 0) - (a.score ?? 0) || a.rank.stale - b.rank.stale || b.rank.score - a.rank.score || b.active - a.active || (a.id < b.id ? -1 : 1))
+      .slice(0, limit);
+    const full = await CandidateProfile.find({ user: { $in: order.map((x) => x.id) } }).populate('user', 'name avatarUrl').lean();
+    const byUser = new Map(full.filter((p) => p.user).map((p) => [String(p.user._id), p]));
+    return order
+      .filter((x) => byUser.has(x.id))
+      .map((x) => {
+        const p = byUser.get(x.id);
+        const card = toCard(p, job, { wishlisted: wish.has(x.id), ...extra });
+        if (x.score !== null) card.matchScore = x.score;
+        return card;
+      });
   };
   let candidates = await find(feedFilters(req.query));
   // Nobody (new) with that role: show people with the wanted skills / experience / salary
@@ -453,6 +463,8 @@ router.post('/searches', async (req, res) => {
   if (!name) throw new HttpError(400, 'Give this search a name', { field: 'name' });
   const filters = normalizeFilters(req.body?.filters);
   if (!hasFilters(filters)) throw new HttpError(400, 'Set at least one filter before saving the search');
+  const invalid = validateFilters(filters);
+  if (invalid) throw new HttpError(400, invalid);
   if ((await SavedSearch.countDocuments({ company: req.user.companyId })) >= 20) {
     throw new HttpError(400, 'You can save up to 20 searches. Delete one first.');
   }
@@ -481,6 +493,8 @@ router.patch('/searches/:id', async (req, res) => {
   if (req.body?.filters !== undefined) {
     const filters = normalizeFilters(req.body.filters);
     if (!hasFilters(filters)) throw new HttpError(400, 'Set at least one filter before saving the search');
+    const invalid = validateFilters(filters);
+    if (invalid) throw new HttpError(400, invalid);
     const existing = await CandidateProfile.find({
       step: 3,
       suspended: { $ne: true },

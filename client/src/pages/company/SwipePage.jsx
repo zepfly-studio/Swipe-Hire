@@ -14,12 +14,14 @@ import Illustration from '../../components/Illustration';
 import { useAuth } from '../../context/AuthContext';
 import { api, cx, errorMessage, toLpa } from '../../lib/api';
 
+const MODE_NAMES = { onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' };
+
 // The last applied filters are remembered per company in this browser, so a refresh
 // (or coming back from another page) doesn't empty the swipe screen.
 const readSaved = (key) => {
   try {
     const saved = JSON.parse(localStorage.getItem(key));
-    return saved?.filters ? { filters: { ...EMPTY_FILTERS, ...saved.filters }, searchId: saved.searchId || '' } : null;
+    return saved?.filters ? { filters: fromSaved(saved.filters), searchId: saved.searchId || '' } : null;
   } catch {
     return null;
   }
@@ -92,7 +94,7 @@ function Sidebar({ filters, onEdit }) {
     ['Role', filters.role],
     ['Experience', filters.minExp !== '' || filters.maxExp !== '' ? `${filters.minExp || 0}–${filters.maxExp || 'Any'} yrs` : null],
     ['Budget', budget],
-    ['Location', [filters.location, filters.workMode].filter(Boolean).join(' · ')],
+    ['Location', [filters.location, filters.workModes?.map((m) => MODE_NAMES[m]).join(' / ')].filter(Boolean).join(' · ')],
   ].filter(([, v]) => v);
   return (
     <aside className="sticky top-24 hidden w-72 shrink-0 space-y-4 self-start lg:block">

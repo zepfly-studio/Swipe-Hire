@@ -6,7 +6,8 @@
     "setup": "node scripts/setup.mjs",
     "dev": "concurrently -n db,api,web -c gray,magenta,cyan \"npm run dev:db --prefix server\" \"npm run dev --prefix server\" \"npm run dev --prefix client\"",
     "build": "npm run build --prefix client",
-    "start": "npm start --prefix server"
+    "start": "npm start --prefix server",
+    "test": "npm test --prefix server"
   },
   "devDependencies": {
     "concurrently": "^10.0.6"

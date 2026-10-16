@@ -14,7 +14,8 @@ const savedSearchSchema = new mongoose.Schema(
       maxExp: Number,
       minSalary: Number,
       maxSalary: Number,
-      workMode: { type: String, enum: ['onsite', 'remote', 'hybrid'] },
+      workModes: [{ type: String, enum: ['onsite', 'remote', 'hybrid'] }],
+      workMode: { type: String, enum: ['onsite', 'remote', 'hybrid'] }, // older searches
       notice: [String],
       skills: [String],
     },

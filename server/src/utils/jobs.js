@@ -46,7 +46,7 @@ export async function resolveFilterJob(companyId, input, retry = true) {
           salaryMin: filters.minSalary,
           salaryMax: filters.maxSalary,
           jobLocation: filters.location === ALL_INDIA ? '' : filters.location,
-          workMode: filters.workMode || 'onsite',
+          workMode: filters.workModes[0] || 'onsite',
           status: 'open',
         },
       },
