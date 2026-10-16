@@ -47,6 +47,14 @@ const ROLE_FAMILIES = [
   ['customer support executive', 'customer service executive', 'customer care executive', 'support associate'],
   ['data analyst', 'business analyst', 'mis executive', 'reporting analyst'],
   ['qa engineer', 'software tester', 'test engineer', 'automation tester', 'manual tester'],
+  ['e-commerce manager', 'e-commerce executive', 'e-commerce operations executive', 'marketplace manager', 'amazon account manager', 'online store manager'],
+  ['catalog executive', 'catalogue manager', 'listing executive', 'product listing executive', 'e-commerce executive'],
+  ['teacher', 'school teacher', 'primary teacher', 'prt teacher', 'tgt teacher', 'pgt teacher', 'tutor', 'online tutor'],
+  ['store manager', 'retail store manager', 'assistant store manager', 'floor manager', 'branch manager'],
+  ['logistics executive', 'supply chain executive', 'dispatch executive', 'shipping executive', 'warehouse executive', 'inventory executive'],
+  ['telecaller', 'tele sales executive', 'call center executive', 'bpo executive', 'inside sales executive'],
+  ['content writer', 'copywriter', 'web content writer', 'technical writer'],
+  ['video editor', 'motion graphics designer', 'animator', 'video producer'],
 ];
 
 // One title -> every meaningful word must appear in the headline, current post or skills.

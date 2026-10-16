@@ -17,6 +17,8 @@ function looseMatch(word, term) {
 
 // Lists above are ordered most-popular first; that order breaks ties.
 // minScore 2 keeps only names where a word starts with what was typed.
+const squash = (s) => s.replace(/[^a-z0-9]/g, '');
+
 export function searchOptions(options, query, { exclude = [], limit = 10, minScore = 1 } = {}) {
   const q = normalize(query);
   if (!q) return [];
@@ -34,6 +36,8 @@ export function searchOptions(options, query, { exclude = [], limit = 10, minSco
     else if (o.startsWith(q)) score = 3;
     else if (terms.every((t) => words.some((w) => w.startsWith(t)))) score = 2;
     else if (o.includes(q) || terms.every((t) => words.some((w) => looseMatch(w, t)))) score = 1;
+    // Ignore spaces, dots and dashes: "ecommerce" finds E-commerce, "nodejs" finds Node.js.
+    else if (squash(o).includes(squash(q))) score = squash(o).startsWith(squash(q)) ? 2 : 1;
     if (score >= minScore) scored.push({ score, index, option });
   });
   return scored

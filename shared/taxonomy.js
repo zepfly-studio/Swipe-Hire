@@ -61,6 +61,69 @@ export const ROLES = [
   'Store Keeper', 'Waiter', 'Welder', 'Wedding Planner', 'Wellness Coach', 'Writer',
   'Delivery Executive', 'Driver', 'Electrician', 'Technician', 'Chef', 'Hotel Manager',
   'Event Manager', 'Travel Consultant', 'Fresher / Intern',
+  // E-commerce & online business
+  'E-commerce Manager', 'E-commerce Executive', 'E-commerce Operations Executive', 'Marketplace Manager',
+  'Amazon Account Manager', 'Catalog Executive', 'Catalogue Manager', 'Listing Executive', 'Product Listing Executive',
+  'D2C Brand Manager', 'Online Store Manager', 'Category Manager', 'Category Executive', 'Merchandiser',
+  'Visual Merchandiser', 'Order Fulfilment Executive', 'Returns Executive', 'Dropshipping Manager',
+  // Marketing, media & creative
+  'Growth Manager', 'Growth Marketer', 'Email Marketing Executive', 'Affiliate Marketing Manager', 'Influencer Marketing Manager',
+  'Marketing Coordinator', 'Product Marketing Manager', 'Media Planner', 'Media Buyer', 'Market Research Analyst',
+  'Community Manager', 'YouTube Manager', 'Video Producer', 'Videographer', 'Photographer', 'Animator', 'Illustrator',
+  'Art Director', 'Creative Director', 'Creative Designer', 'Packaging Designer', 'Brand Designer', 'Visual Designer',
+  'Journalist', 'Reporter', 'News Anchor', 'Editor', 'Sub Editor', 'Proofreader', 'Translator', 'Voice Over Artist',
+  'Radio Jockey', 'Scriptwriter', 'Technical Writer', 'Instructional Designer',
+  // Sales & business
+  'Area Sales Manager', 'Regional Sales Manager', 'Territory Sales Manager', 'Sales Officer', 'Sales Coordinator',
+  'Sales Trainee', 'Retail Sales Executive', 'Showroom Sales Executive', 'Counter Sales Executive', 'Medical Representative',
+  'Channel Sales Manager', 'Corporate Sales Manager', 'Franchise Manager', 'Account Executive', 'Bid Manager',
+  'Business Analyst Intern', 'Lead Generation Executive', 'Tele Sales Executive', 'Loan Officer', 'Credit Officer',
+  'Collection Executive', 'Insurance Sales Manager', 'Mutual Fund Advisor', 'Stock Broker', 'Equity Research Analyst',
+  // Finance, banking & legal
+  'Accounts Assistant', 'Accounts Payable Executive', 'Accounts Receivable Executive', 'Billing Executive', 'Payroll Executive',
+  'Cashier', 'Treasury Manager', 'Credit Analyst', 'Risk Analyst', 'Investment Banker', 'Company Secretary (CS)',
+  'Cost Accountant (CMA)', 'Internal Auditor', 'Bank PO', 'Bank Clerk', 'Branch Operations Executive', 'KYC Executive',
+  'Underwriter', 'Claims Executive', 'Actuarial Analyst', 'Legal Advisor', 'Legal Associate', 'Paralegal', 'Compliance Officer',
+  // HR & admin
+  'HR Business Partner', 'HR Coordinator', 'HR Intern', 'HR Operations Executive', 'Payroll Manager', 'Learning & Development Manager',
+  'Admin Manager', 'Facility Manager', 'Office Manager', 'Executive Assistant', 'Secretary', 'Office Boy', 'Housekeeping Staff',
+  'Security Guard', 'Security Supervisor',
+  // Operations, supply chain & logistics
+  'Operations Associate', 'Operations Head', 'Process Associate', 'Supply Chain Manager', 'Logistics Manager', 'Procurement Manager',
+  'Purchase Manager', 'Inventory Manager', 'Inventory Executive', 'Dispatch Executive', 'Shipping Executive', 'Import Export Executive',
+  'Export Manager', 'Customs Executive', 'Fleet Manager', 'Delivery Boy', 'Courier Executive', 'Picker Packer', 'Forklift Operator',
+  // Manufacturing, engineering & trades
+  'Production Supervisor', 'Production Manager', 'Plant Manager', 'Plant Head', 'Shift Supervisor', 'Quality Control Inspector',
+  'Quality Assurance Manager', 'Safety Officer', 'HSE Officer', 'CNC Operator', 'Machine Operator', 'Fitter', 'Turner',
+  'Plumber', 'Carpenter', 'Mason', 'Painter', 'AC Technician', 'Mobile Repair Technician', 'Automobile Technician', 'Mechanic',
+  'Service Engineer', 'Field Service Engineer', 'Instrumentation Engineer', 'Chemical Engineer', 'Process Engineer',
+  'Project Engineer', 'Planning Engineer', 'Structural Engineer', 'Quantity Surveyor', 'Architect', 'Draughtsman',
+  'AutoCAD Designer', 'Surveyor', 'Construction Manager', 'Real Estate Manager', 'Property Manager',
+  // Retail & hospitality
+  'Retail Store Manager', 'Assistant Store Manager', 'Floor Manager', 'Store Executive', 'Billing Cashier', 'Sales Associate',
+  'Beauty Advisor', 'Hotel Receptionist', 'Front Office Manager', 'Guest Relations Executive', 'Restaurant Manager', 'Bartender',
+  'Barista', 'Steward', 'Housekeeping Supervisor', 'Commis Chef', 'Sous Chef', 'Cook', 'Kitchen Helper', 'Bakery Chef',
+  'Tour Manager', 'Travel Agent', 'Ticketing Executive', 'Cabin Crew', 'Air Hostess', 'Ground Staff',
+  // Healthcare & wellness
+  'Medical Officer', 'Dentist', 'Physiotherapist', 'Dietitian', 'Nutritionist', 'Medical Coder', 'Medical Transcriptionist',
+  'Hospital Administrator', 'Ward Boy', 'Patient Care Coordinator', 'Radiographer', 'Optometrist', 'Psychologist', 'Counsellor',
+  'Yoga Instructor', 'Fitness Trainer', 'Gym Trainer', 'Beautician', 'Hair Stylist', 'Makeup Artist', 'Spa Therapist',
+  'Clinical Research Associate', 'Pharma Sales Executive', 'Veterinary Doctor',
+  // Education
+  'School Teacher', 'Primary Teacher', 'PRT Teacher', 'TGT Teacher', 'PGT Teacher', 'Maths Teacher', 'English Teacher',
+  'Science Teacher', 'Computer Teacher', 'Nursery Teacher', 'Professor', 'Assistant Professor', 'Academic Coordinator',
+  'Principal', 'Admission Counsellor', 'Education Counsellor', 'Online Tutor', 'Coding Instructor',
+  'Corporate Trainer', 'Librarian',
+  // IT & data (more)
+  'IT Manager', 'IT Executive', 'IT Administrator', 'Desktop Support Engineer', 'Helpdesk Executive', 'Cyber Security Analyst',
+  'Ethical Hacker', 'Penetration Tester', 'SOC Analyst', 'Data Entry Executive', 'Data Annotator', 'ERP Consultant',
+  'CRM Executive', 'Zoho Developer', 'Odoo Developer', 'Tally Operator', 'Computer Operator', 'GIS Analyst',
+  'Low-code Developer', 'No-code Developer', 'Automation Engineer', 'RPA Developer', 'Generative AI Engineer',
+  // Agriculture, energy & others
+  'Agriculture Officer', 'Agronomist', 'Farm Manager', 'Solar Engineer', 'Solar Sales Executive', 'Environmental Engineer',
+  'Social Worker', 'NGO Coordinator', 'Field Officer', 'Field Executive', 'Survey Executive', 'Census Enumerator',
+  'Interior Design Consultant', 'Jewellery Designer', 'Textile Designer', 'Tailor', 'Boutique Manager', 'Event Coordinator',
+  'Wedding Photographer', 'Content Moderator', 'Virtual Assistant', 'Freelancer',
 ];
 
 export const SKILLS = [
