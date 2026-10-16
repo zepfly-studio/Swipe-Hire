@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Link, useSearchParams } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BadgeCheck, Briefcase, CalendarPlus, Check, ClipboardList, Copy, FileText, Heart, Layers, Mail, MapPin, MessageCircle, MessagesSquare, Phone, UserMinus, Users, X } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -200,24 +200,17 @@ export default function CandidateListPage({ kind }) {
   const [open, setOpen] = useState(null);
   const [resume, setResume] = useState(null);
   const [busy, setBusy] = useState(false);
-  const [params, setParams] = useSearchParams();
-  const jobFilter = kind === 'shortlisted' ? params.get('job') || '' : '';
-  const [jobs, setJobs] = useState([]);
-
-  useEffect(() => {
-    if (kind === 'shortlisted') api.get('/company/jobs').then(({ data }) => setJobs(data.jobs)).catch(() => {});
-  }, [kind]);
 
   useEffect(() => {
     setItems(null);
     api
-      .get(cfg.endpoint, { params: jobFilter ? { jobId: jobFilter } : {} })
+      .get(cfg.endpoint)
       .then(({ data }) => setItems(data.candidates))
       .catch((err) => {
         toast.error(errorMessage(err));
         setItems([]);
       });
-  }, [cfg.endpoint, jobFilter]);
+  }, [cfg.endpoint]);
 
   const update = (id, patch) => {
     setItems((list) => list.map((c) => (rowKey(c) === id ? { ...c, ...patch } : c)));
@@ -323,25 +316,6 @@ They will show up again on the Swipe page when they match your filters. Open int
           </h1>
           <p className="mt-1 text-white/50">{cfg.subtitle}</p>
         </div>
-        {isPipeline && jobs.length > 1 && (
-          <label className="relative w-full sm:w-64">
-            <Briefcase size={16} className="pointer-events-none absolute left-3.5 top-1/2 -translate-y-1/2 text-brand-400" />
-            <select
-              value={jobFilter}
-              onChange={(e) => setParams(e.target.value ? { job: e.target.value } : {})}
-              className="input appearance-none py-2.5 pl-10 text-sm font-semibold"
-              aria-label="Filter by job"
-            >
-              <option value="" className="bg-ink-800">All jobs</option>
-              {jobs.map((j) => (
-                <option key={j.id} value={j.id} className="bg-ink-800">
-                  {j.title}
-                  {j.status !== 'open' ? ` (${j.status})` : ''}
-                </option>
-              ))}
-            </select>
-          </label>
-        )}
       </motion.div>
 
       {!items && <Spinner className="py-24" />}
