@@ -177,7 +177,23 @@ router.get('/feed', async (req, res) => {
     .slice(0, limit)
     .map((x) => x.card);
 
-  res.json({ candidates, swipesLeft: company.swipesLeft, job: publicJob(job) });
+  // Nothing new: say how many people match that this company has already swiped, so an
+  // empty screen doesn't look like "nobody matches".
+  let seen;
+  if (!candidates.length && !exclude.length) {
+    const matched = await CandidateProfile.find({
+      step: 3,
+      openToWork: { $ne: false }, suspended: { $ne: true },
+      user: { $in: swiped },
+      $and: [feedFilters(req.query), salaryFitWhere(job)],
+    }).distinct('user');
+    if (matched.length) {
+      const shortlisted = (await Swipe.find({ company: req.user.companyId, candidate: { $in: matched }, action: 'right' }).distinct('candidate')).length;
+      seen = { total: matched.length, shortlisted, passed: matched.length - shortlisted };
+    }
+  }
+
+  res.json({ candidates, swipesLeft: company.swipesLeft, job: publicJob(job), ...(seen && { seen }) });
 });
 
 router.post('/swipe', async (req, res) => {

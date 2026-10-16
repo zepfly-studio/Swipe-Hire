@@ -143,6 +143,7 @@ export default function SwipePage() {
   const [paywall, setPaywall] = useState(false);
   const [flash, setFlash] = useState(null);
   const [feedError, setFeedError] = useState(null);
+  const [seen, setSeen] = useState(null); // matching people this company already swiped
   const fetching = useRef(false);
   const pending = useRef(new Set());
 
@@ -199,6 +200,7 @@ export default function SwipePage() {
         return [...prev, ...data.candidates.filter((c) => !seen.has(c.id))];
       });
       if (data.candidates.length === 0) setExhausted(true);
+      if (!current.length) setSeen(data.seen || null);
     } catch (err) {
       if (gen === generation.current) setFeedError(errorMessage(err));
     } finally {
@@ -214,6 +216,7 @@ export default function SwipePage() {
     setLoading(countFilters(filtersRef.current) > 0);
     setExhausted(false);
     setFeedError(null);
+    setSeen(null);
   };
 
   const applyFilters = (next, searchId = '') => {
@@ -492,16 +495,35 @@ export default function SwipePage() {
                     <Illustration name="no-candidates" />
                     {activeFilters > 0 ? (
                       <>
-                        <h3 className="mt-4 text-2xl font-extrabold">No one matches your filters</h3>
-                        <p className="mt-2 text-white/55">Try widening them to see more candidates.</p>
+                        {seen ? (
+                          <>
+                            <h3 className="mt-4 text-2xl font-extrabold">You've seen everyone for these filters</h3>
+                            <p className="mt-2 text-white/55">
+                              {seen.total} {seen.total === 1 ? 'candidate matches' : 'candidates match'}, and you've already swiped {seen.total === 1 ? 'them' : 'all of them'}
+                              {' '}({[seen.shortlisted && `${seen.shortlisted} shortlisted`, seen.passed && `${seen.passed} passed`].filter(Boolean).join(', ')}).
+                              {seen.passed ? ' Undo brings back the ones you passed.' : ''} Widen the filters to see more people.
+                            </p>
+                          </>
+                        ) : (
+                          <>
+                            <h3 className="mt-4 text-2xl font-extrabold">No one matches your filters</h3>
+                            <p className="mt-2 text-white/55">Try widening them to see more candidates.</p>
+                          </>
+                        )}
                         <div className="mt-6 flex flex-wrap justify-center gap-3">
                           <button onClick={openFilters} className="btn-ghost">
                             <SlidersHorizontal size={18} />
                             Edit filters
                           </button>
-                          <button onClick={() => applyFilters(EMPTY_FILTERS)} className="btn-primary">
-                            Clear filters
-                          </button>
+                          {seen?.shortlisted ? (
+                            <Link to="/company/shortlisted" className="btn-primary">
+                              Open shortlisted
+                            </Link>
+                          ) : (
+                            <button onClick={() => applyFilters(EMPTY_FILTERS)} className="btn-primary">
+                              Clear filters
+                            </button>
+                          )}
                         </div>
                       </>
                     ) : (
