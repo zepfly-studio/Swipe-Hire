@@ -1,6 +1,6 @@
 import { useEffect, useState } from 'react';
 import { motion } from 'framer-motion';
-import { Check, Crown, Gift, TicketPercent, X } from 'lucide-react';
+import { Check, Crown, Gift } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Spinner } from './ui';
 import { useAuth } from '../context/AuthContext';
@@ -21,10 +21,6 @@ export default function PlanCards({ onPurchased }) {
   const { user, setProfile } = useAuth();
   const [info, setInfo] = useState(null);
   const [buying, setBuying] = useState(null);
-  // Discount code: typed text, and the checked coupon ({ code, percentOff }).
-  const [codeInput, setCodeInput] = useState('');
-  const [coupon, setCoupon] = useState(null);
-  const [checking, setChecking] = useState(false);
 
   useEffect(() => {
     api.get('/payment/plans').then(({ data }) => setInfo(data)).catch(() => toast.error('Could not load plans'));
@@ -37,38 +33,10 @@ export default function PlanCards({ onPurchased }) {
     onPurchased?.(data);
   };
 
-  const applyCoupon = async () => {
-    const code = codeInput.trim();
-    if (!code) return;
-    setChecking(true);
-    try {
-      // Checked against the first plan it applies to; the price per plan is worked out below.
-      let ok = null;
-      let lastErr;
-      for (const p of info.plans) {
-        try {
-          const { data } = await api.get('/payment/coupon', { params: { code, planId: p.id } });
-          ok = ok || { code: data.code, percentOff: data.percentOff, plans: [] };
-          ok.plans.push(p.id);
-        } catch (err) {
-          lastErr = err;
-        }
-      }
-      if (!ok) throw lastErr;
-      setCoupon(ok);
-      toast.success(`${ok.code} applied: ${ok.percentOff}% off`);
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setChecking(false);
-    }
-  };
-  const priceOf = (plan) => (coupon?.plans.includes(plan.id) ? Math.max(1, Math.round(plan.price * (1 - coupon.percentOff / 100))) : plan.price);
-
   const buy = async (plan) => {
     setBuying(plan.id);
     try {
-      const { data: order } = await api.post('/payment/order', { planId: plan.id, ...(coupon?.plans.includes(plan.id) && { coupon: coupon.code }) });
+      const { data: order } = await api.post('/payment/order', { planId: plan.id });
       if (order.mode === 'demo') {
         await new Promise((r) => setTimeout(r, 900));
         await verify({ orderId: order.orderId });
@@ -128,7 +96,7 @@ export default function PlanCards({ onPurchased }) {
 
         {info.plans.map((plan, i) => {
           const featured = plan.popular || info.plans.length === 1;
-          const price = priceOf(plan);
+          const { price } = plan;
           return (
           <motion.div
             key={plan.id}
@@ -155,7 +123,6 @@ export default function PlanCards({ onPurchased }) {
               <p className="mt-4 text-lg font-bold">{plan.name}</p>
               <p className="mt-1 text-4xl font-extrabold">
                 ₹{price}
-                {price !== plan.price && <span className="ml-2 text-lg font-semibold text-white/40 line-through">₹{plan.price}</span>}
                 <span className="ml-1 text-base font-medium text-white/40">one-time</span>
               </p>
               <p className="mt-1 text-sm text-white/50">
@@ -176,30 +143,6 @@ export default function PlanCards({ onPurchased }) {
           </motion.div>
           );
         })}
-      </div>
-      <div className="mx-auto flex max-w-md flex-wrap items-center justify-center gap-2">
-        {coupon ? (
-          <p className="flex items-center gap-2 rounded-full bg-emerald-400/10 px-3 py-1.5 text-sm font-semibold text-emerald-300">
-            <TicketPercent size={16} /> {coupon.code}: {coupon.percentOff}% off applied
-            <button onClick={() => setCoupon(null)} className="rounded-full p-0.5 hover:bg-white/10" aria-label="Remove coupon">
-              <X size={14} />
-            </button>
-          </p>
-        ) : (
-          <>
-            <input
-              value={codeInput}
-              onChange={(e) => setCodeInput(e.target.value.toUpperCase())}
-              onKeyDown={(e) => e.key === 'Enter' && applyCoupon()}
-              placeholder="Have a coupon code?"
-              aria-label="Coupon code"
-              className="input w-56 py-2 text-sm"
-            />
-            <Button className="btn-ghost py-2 text-sm" loading={checking} disabled={!codeInput.trim()} onClick={applyCoupon}>
-              Apply
-            </Button>
-          </>
-        )}
       </div>
       {info.demoMode && (
         <p className="text-center text-xs text-amber-300/80">

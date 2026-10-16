@@ -54,7 +54,7 @@ const PRIVATE_TITLES = {
   '/admin/review': 'Admin · Uploads',
   '/admin/tickets': 'Admin · Support',
   '/admin/announce': 'Admin · Announcements',
-  '/admin/plans': 'Admin · Plans & coupons',
+  '/admin/plans': 'Admin · Plans',
   '/admin/settings': 'Admin · Settings',
   '/admin/content': 'Admin · Content & lists',
   '/admin/admins': 'Admin · Admin team',

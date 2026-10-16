@@ -2314,8 +2314,6 @@ The compact version of this card (no header) is used inside the Shortlisted cand
 
 **Plans can change at any time** — always read `GET /api/payment/plans`; there may be several plans (e.g. Starter ₹399 / 150, Growth ₹599 / 350). A plan with `popular: true` gets the "Most popular" highlight. `freeSwipes` is also admin-controlled.
 
-**Coupons** — "Have a coupon code?" field on the plans screen. `GET /api/payment/coupon?code=&planId=` → `{code, percentOff, price, listPrice}` (404/400 with a message if invalid). Send `coupon` in `POST /api/payment/order {planId, coupon}`; `amount` in the response is the discounted price.
-
 **Job approval** — when the admin requires it, a new company's first job comes back with `approved: false`. Show an amber "Awaiting approval" pill on the job; the feed returns **409** `{code:'JOB_PENDING'}` with a message to show. An approval notification arrives when it goes live.
 
 **Suspended accounts** — login returns **403** "This account has been suspended. Please contact support."; an existing session gets **401**. Suspended candidates are hidden from feeds.

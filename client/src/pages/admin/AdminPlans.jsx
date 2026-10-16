@@ -3,22 +3,18 @@ import { Plus, Save, Trash2 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button, Field, Input, Spinner, Textarea } from '../../components/ui';
 import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, Pill } from './AdminShell';
+import AdminShell from './AdminShell';
 
 const blankPlan = () => ({ name: '', price: '', swipes: '', perks: '', popular: false });
 const toForm = (p) => ({ ...p, price: String(p.price), swipes: String(p.swipes), perks: (p.perks || []).join('\n') });
 
-// Swipe-credit plans (what companies can buy) and discount coupons.
+// Swipe-credit plans (what companies can buy).
 export default function AdminPlans() {
   const [plans, setPlans] = useState(null);
   const [saving, setSaving] = useState(false);
-  const [coupons, setCoupons] = useState([]);
-  const [c, setC] = useState({ code: '', percentOff: '', expiresAt: '', maxUses: '', planIds: [] });
-  const [creating, setCreating] = useState(false);
 
   const load = () => {
     api.get('/admin/settings').then(({ data }) => setPlans(data.plans.map(toForm))).catch((err) => toast.error(errorMessage(err)));
-    api.get('/admin/coupons').then(({ data }) => setCoupons(data.coupons)).catch(() => {});
   };
   useEffect(load, []);
 
@@ -37,26 +33,11 @@ export default function AdminPlans() {
     }
   };
 
-  const createCoupon = async () => {
-    setCreating(true);
-    try {
-      await api.post('/admin/coupons', { ...c, percentOff: Number(c.percentOff), maxUses: c.maxUses || null, expiresAt: c.expiresAt || null });
-      toast.success(`Coupon ${c.code.toUpperCase()} created`);
-      setC({ code: '', percentOff: '', expiresAt: '', maxUses: '', planIds: [] });
-      load();
-    } catch (err) {
-      toast.error(errorMessage(err));
-    } finally {
-      setCreating(false);
-    }
-  };
-  const toggleCoupon = (x) => api.patch(`/admin/coupons/${x.id}`, { active: !x.active }).then(load).catch((err) => toast.error(errorMessage(err)));
-  const removeCoupon = (x) => window.confirm(`Delete coupon ${x.code}?`) && api.delete(`/admin/coupons/${x.id}`).then(load).catch((err) => toast.error(errorMessage(err)));
 
   return (
     <AdminShell
-      title="Plans & coupons"
-      subtitle="Create the swipe packs companies can buy, change prices, and make discount codes."
+      title="Plans"
+      subtitle="Create the swipe packs companies can buy and change prices."
       actions={
         plans && (
           <Button className="btn-primary" loading={saving} onClick={save}>
@@ -108,85 +89,6 @@ export default function AdminPlans() {
             )}
           </div>
 
-          <section className="glass rounded-3xl p-5">
-            <h2 className="font-bold">Coupons</h2>
-            <p className="text-sm text-white/50">Companies enter the code before paying. Up to 90% off.</p>
-            <div className="mt-4 grid gap-3 sm:grid-cols-2 lg:grid-cols-5">
-              <Field label="Code">
-                <Input value={c.code} onChange={(e) => setC({ ...c, code: e.target.value.toUpperCase() })} maxLength={20} placeholder="LAUNCH20" />
-              </Field>
-              <Field label="Discount %">
-                <Input type="number" min="1" max="90" value={c.percentOff} onChange={(e) => setC({ ...c, percentOff: e.target.value })} placeholder="20" />
-              </Field>
-              <Field label="Expires" hint="Optional">
-                <Input type="date" value={c.expiresAt} onChange={(e) => setC({ ...c, expiresAt: e.target.value })} />
-              </Field>
-              <Field label="Max uses" hint="Optional">
-                <Input type="number" min="1" value={c.maxUses} onChange={(e) => setC({ ...c, maxUses: e.target.value })} placeholder="Unlimited" />
-              </Field>
-              <div className="flex items-end pb-[22px]">
-                <Button className="btn-primary w-full" loading={creating} onClick={createCoupon} disabled={!c.code || !c.percentOff}>
-                  <Plus size={16} /> Create
-                </Button>
-              </div>
-            </div>
-            <div className="mt-1 flex flex-wrap items-center gap-2 text-sm">
-              <span className="text-white/50">Only for:</span>
-              {plans.filter((p) => p.id).map((p) => (
-                <label key={p.id} className="flex items-center gap-1.5 rounded-full bg-white/[0.05] px-3 py-1">
-                  <input
-                    type="checkbox"
-                    className="accent-[#0f4d42]"
-                    checked={c.planIds.includes(p.id)}
-                    onChange={(e) => setC({ ...c, planIds: e.target.checked ? [...c.planIds, p.id] : c.planIds.filter((x) => x !== p.id) })}
-                  />
-                  {p.name}
-                </label>
-              ))}
-              <span className="text-xs text-white/40">(none ticked = every plan)</span>
-            </div>
-            {coupons.length > 0 && (
-              <div className="mt-5 overflow-x-auto">
-                <table className="w-full min-w-[640px] text-left text-sm">
-                  <thead className="text-[11px] uppercase tracking-[0.1em] text-white/45">
-                    <tr>
-                      <th className="py-2 font-semibold">Code</th>
-                      <th className="py-2 font-semibold">Discount</th>
-                      <th className="py-2 font-semibold">Used</th>
-                      <th className="py-2 font-semibold">Expires</th>
-                      <th className="py-2 font-semibold">Plans</th>
-                      <th className="py-2 font-semibold">Status</th>
-                      <th />
-                    </tr>
-                  </thead>
-                  <tbody className="divide-y divide-white/[0.06]">
-                    {coupons.map((x) => (
-                      <tr key={x.id}>
-                        <td className="py-2.5 font-mono font-bold">{x.code}</td>
-                        <td className="py-2.5">{x.percentOff}% off</td>
-                        <td className="py-2.5 tabular-nums">
-                          {x.uses}
-                          {x.maxUses ? ` / ${x.maxUses}` : ''}
-                        </td>
-                        <td className="py-2.5">{x.expiresAt ? dateOf(x.expiresAt) : 'Never'}</td>
-                        <td className="py-2.5">{x.planIds.length ? x.planIds.join(', ') : 'All'}</td>
-                        <td className="py-2.5">
-                          <button onClick={() => toggleCoupon(x)}>
-                            <Pill tone={x.active ? 'green' : 'gray'}>{x.active ? 'Active' : 'Paused'}</Pill>
-                          </button>
-                        </td>
-                        <td className="py-2.5 text-right">
-                          <button onClick={() => removeCoupon(x)} className="rounded-lg p-1.5 text-danger hover:bg-red-500/10" aria-label={`Delete ${x.code}`}>
-                            <Trash2 size={15} />
-                          </button>
-                        </td>
-                      </tr>
-                    ))}
-                  </tbody>
-                </table>
-              </div>
-            )}
-          </section>
         </div>
       )}
     </AdminShell>

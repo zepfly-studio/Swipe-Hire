@@ -41,7 +41,7 @@ const GROUPS = [
     title: 'Business',
     links: [
       { to: '/admin/payments', label: 'Payments', icon: IndianRupee, perm: 'payments' },
-      { to: '/admin/plans', label: 'Plans & coupons', icon: Crown, perm: 'settings' },
+      { to: '/admin/plans', label: 'Plans', icon: Crown, perm: 'settings' },
       { to: '/admin/announce', label: 'Announcements', icon: Megaphone, perm: 'announce' },
     ],
   },

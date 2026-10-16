@@ -14,7 +14,6 @@ import { Payment } from '../models/Payment.js';
 import { Notification } from '../models/Notification.js';
 import { Report } from '../models/Report.js';
 import { Ticket } from '../models/Ticket.js';
-import { Coupon } from '../models/Coupon.js';
 import { AdminLog } from '../models/AdminLog.js';
 import { config, razorpayEnabled } from '../config/index.js';
 import { HttpError } from '../utils/HttpError.js';
@@ -510,55 +509,6 @@ router.put('/settings/taxonomy', perm('settings'), async (req, res) => {
   res.json({ ok: true, taxonomy });
 });
 
-// ======================= coupons =======================
-const couponOut = (c) => ({ id: String(c._id), code: c.code, percentOff: c.percentOff, active: c.active, expiresAt: c.expiresAt, maxUses: c.maxUses, uses: c.uses, planIds: c.planIds || [], createdAt: c.createdAt });
-function couponFields(b) {
-  const out = {};
-  if (b.code !== undefined) {
-    const code = String(b.code).trim().toUpperCase();
-    if (!/^[A-Z0-9_-]{3,20}$/.test(code)) throw new HttpError(400, 'Code: 3–20 letters, numbers, - or _', { field: 'code' });
-    out.code = code;
-  }
-  if (b.percentOff !== undefined) {
-    const n = Number(b.percentOff);
-    if (!Number.isInteger(n) || n < 1 || n > 90) throw new HttpError(400, 'Discount must be 1–90 %', { field: 'percentOff' });
-    out.percentOff = n;
-  }
-  if (b.active !== undefined) out.active = Boolean(b.active);
-  if (b.expiresAt !== undefined) out.expiresAt = b.expiresAt ? new Date(b.expiresAt) : null;
-  if (out.expiresAt && Number.isNaN(out.expiresAt.getTime())) throw new HttpError(400, 'Invalid expiry date', { field: 'expiresAt' });
-  if (b.maxUses !== undefined) {
-    const n = b.maxUses === '' || b.maxUses === null ? null : Number(b.maxUses);
-    if (n !== null && (!Number.isInteger(n) || n < 1)) throw new HttpError(400, 'Max uses must be a whole number', { field: 'maxUses' });
-    out.maxUses = n;
-  }
-  if (b.planIds !== undefined) out.planIds = (Array.isArray(b.planIds) ? b.planIds : []).map(String).slice(0, 6);
-  return out;
-}
-router.get('/coupons', perm('settings'), async (_req, res) => {
-  res.json({ coupons: (await Coupon.find().sort({ createdAt: -1 }).lean()).map(couponOut) });
-});
-router.post('/coupons', perm('settings'), async (req, res) => {
-  const data = couponFields(req.body ?? {});
-  if (!data.code || !data.percentOff) throw new HttpError(400, 'Add a code and a discount');
-  if (await Coupon.exists({ code: data.code })) throw new HttpError(409, 'This code already exists', { field: 'code' });
-  const c = await Coupon.create(data);
-  await logAdmin(req, 'coupon.create', { targetType: 'coupon', targetId: c._id, summary: `${c.code} ${c.percentOff}% off` });
-  res.status(201).json({ coupon: couponOut(c) });
-});
-router.patch('/coupons/:id', perm('settings'), async (req, res) => {
-  const data = couponFields({ ...req.body, code: undefined });
-  const c = await Coupon.findByIdAndUpdate(oid(req.params.id, 'coupon'), data, { new: true }).lean();
-  if (!c) throw new HttpError(404, 'Coupon not found');
-  await logAdmin(req, 'coupon.update', { targetType: 'coupon', targetId: c._id, summary: `${c.code}: ${Object.keys(data).join(', ')}` });
-  res.json({ coupon: couponOut(c) });
-});
-router.delete('/coupons/:id', perm('settings'), async (req, res) => {
-  const c = await Coupon.findByIdAndDelete(oid(req.params.id, 'coupon')).lean();
-  if (!c) throw new HttpError(404, 'Coupon not found');
-  await logAdmin(req, 'coupon.delete', { targetType: 'coupon', targetId: c._id, summary: c.code });
-  res.json({ ok: true });
-});
 
 // ======================= admin team =======================
 router.get('/admins', perm('admins'), async (_req, res) => {
@@ -659,8 +609,8 @@ router.get('/export/:kind', perm('export'), async (req, res) => {
     const pays = await Payment.find().sort({ createdAt: -1 }).lean();
     const co = Object.fromEntries((await CompanyProfile.find().select('user companyName').lean()).map((c) => [String(c.user), c.companyName]));
     out = csv(
-      ['Date', 'Company', 'Plan', 'Amount (₹)', 'List price (₹)', 'Coupon', 'Swipes', 'Mode', 'Status', 'Order', 'Payment', 'Note'],
-      pays.map((p) => [p.createdAt, co[String(p.company)], p.planId, p.amount, p.listPrice, p.couponCode, p.swipes, p.mode, p.status, p.orderId, p.paymentId, p.note]),
+      ['Date', 'Company', 'Plan', 'Amount (₹)', 'Swipes', 'Mode', 'Status', 'Order', 'Payment', 'Note'],
+      pays.map((p) => [p.createdAt, co[String(p.company)], p.planId, p.amount, p.swipes, p.mode, p.status, p.orderId, p.paymentId, p.note]),
     );
   } else {
     throw new HttpError(404, 'Unknown export');
