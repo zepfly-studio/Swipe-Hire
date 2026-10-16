@@ -1,14 +1,25 @@
-// The company's budget must reach the candidate's minimum, unless the candidate is open
-// to negotiate. Jobs without a budget, or candidates without an expectation, always fit.
+// How far above the budget a candidate who is "open to negotiate" may still be (20%).
+// Anyone further off would not take the job, so they aren't shown.
+export const NEGOTIATE_MARGIN = 1.2;
+
+// The company's budget must reach the candidate's minimum; a candidate open to negotiate
+// may ask up to 20% more. Jobs without a budget, or candidates without an expectation, always fit.
 export function salaryFits(candidate, job) {
-  if (candidate.salaryNegotiable || !job.salaryMax || candidate.expectedSalary == null) return true;
-  return candidate.expectedSalary <= job.salaryMax;
+  if (!job.salaryMax || candidate.expectedSalary == null) return true;
+  const limit = candidate.salaryNegotiable ? job.salaryMax * NEGOTIATE_MARGIN : job.salaryMax;
+  return candidate.expectedSalary <= limit;
 }
 
 // The same rule as a Mongo condition on CandidateProfile.
 export function salaryFitWhere(job) {
   if (!job.salaryMax) return {};
-  return { $or: [{ salaryNegotiable: true }, { expectedSalary: null }, { expectedSalary: { $lte: job.salaryMax } }] };
+  return {
+    $or: [
+      { expectedSalary: null },
+      { expectedSalary: { $lte: job.salaryMax } },
+      { salaryNegotiable: true, expectedSalary: { $lte: job.salaryMax * NEGOTIATE_MARGIN } },
+    ],
+  };
 }
 
 // Scores how well a candidate fits a company's requirements (0-100).

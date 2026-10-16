@@ -1,6 +1,6 @@
 import { pick, cleanList } from './pick.js';
 import { signUrl, withSignedFiles } from './signedUrl.js';
-import { matchCandidate } from './match.js';
+import { matchCandidate, NEGOTIATE_MARGIN } from './match.js';
 
 // What a company may see about a candidate (no phone/email until shortlisted).
 // Age and gender are collected but never shown to companies, to avoid biased hiring.
@@ -117,9 +117,14 @@ export function feedFilters(q) {
     if (f.maxExp !== null) where.experienceYears.$lte = f.maxExp;
   }
   // "Max salary": the candidate's range must start at or below it (a 4–6 LPA candidate
-  // matches "max 5"), or the candidate is open to negotiate.
+  // matches "max 5"); someone open to negotiate may start up to 20% above it.
   if (f.maxSalary !== null) {
-    and.push({ $or: [{ expectedSalary: { $lte: f.maxSalary } }, { salaryNegotiable: true }] });
+    and.push({
+      $or: [
+        { expectedSalary: { $lte: f.maxSalary } },
+        { salaryNegotiable: true, expectedSalary: { $lte: f.maxSalary * NEGOTIATE_MARGIN } },
+      ],
+    });
   }
   if (f.minSalary !== null) {
     and.push({ $or: [{ expectedSalaryMax: { $gte: f.minSalary } }, { expectedSalaryMax: null, expectedSalary: { $gte: f.minSalary } }] });

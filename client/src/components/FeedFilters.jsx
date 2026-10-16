@@ -203,7 +203,7 @@ function Form({
           </Field>
           <Field
             label="Max salary (LPA)"
-            hint={f.maxSalary === '' ? 'Includes candidates open to negotiate' : salaryHint(f.maxSalary)}
+            hint={f.maxSalary === '' ? 'Also shows people open to negotiate up to 20% above it' : salaryHint(f.maxSalary)}
           >
             <Input type="number" min={0} inputMode="decimal" value={f.maxSalary} onChange={set('maxSalary')} placeholder="Any" />
           </Field>
