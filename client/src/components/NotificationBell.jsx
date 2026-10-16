@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
-import { BadgeCheck, Bell, BellRing, CalendarClock, CheckCheck, ClipboardList, LifeBuoy, Megaphone, MessageCircle, PartyPopper, Sparkles } from 'lucide-react';
+import { BadgeCheck, Bell, BellRing, CalendarClock, CheckCheck, ClipboardList, LifeBuoy, Megaphone, MessageCircle, PartyPopper, Sparkles, Trash2, X } from 'lucide-react';
 import { api, cx } from '../lib/api';
 import { usePoll } from '../hooks/usePoll';
 import Illustration from './Illustration';
@@ -68,6 +68,20 @@ export default function NotificationBell() {
     setData((d) => ({ unread: 0, notifications: d.notifications.map((x) => ({ ...x, read: true })) }));
   };
 
+  const clearAll = () => {
+    if (!window.confirm('Clear all notifications?')) return;
+    api.delete('/notifications').catch(() => {});
+    setData({ unread: 0, notifications: [] });
+  };
+
+  const removeOne = (n) => {
+    api.delete(`/notifications/${n.id}`).catch(() => {});
+    setData((d) => ({
+      unread: Math.max(0, d.unread - (n.read ? 0 : 1)),
+      notifications: d.notifications.filter((x) => x.id !== n.id),
+    }));
+  };
+
   return (
     <div ref={ref} className="relative">
       <motion.button
@@ -105,12 +119,20 @@ export default function NotificationBell() {
           >
             <div className="flex items-center justify-between border-b border-white/10 px-4 py-3">
               <p className="font-bold">Notifications</p>
-              {data.unread > 0 && (
-                <button onClick={readAll} className="flex items-center gap-1 text-xs font-semibold text-white/50 hover:text-white">
-                  <CheckCheck size={14} />
-                  Mark all read
-                </button>
-              )}
+              <div className="flex items-center gap-3">
+                {data.unread > 0 && (
+                  <button onClick={readAll} className="flex items-center gap-1 text-xs font-semibold text-white/50 hover:text-white">
+                    <CheckCheck size={14} />
+                    Mark all read
+                  </button>
+                )}
+                {data.notifications.length > 0 && (
+                  <button onClick={clearAll} className="flex items-center gap-1 text-xs font-semibold text-white/50 hover:text-danger">
+                    <Trash2 size={13} />
+                    Clear all
+                  </button>
+                )}
+              </div>
             </div>
             <div className="no-scrollbar max-h-[60vh] overflow-y-auto">
               {data.notifications.length === 0 && (
@@ -122,21 +144,30 @@ export default function NotificationBell() {
               {data.notifications.map((n) => {
                 const Icon = ICONS[n.type] ?? Bell;
                 return (
-                  <button
-                    key={n.id}
-                    onClick={() => openItem(n)}
-                    className={cx('flex w-full gap-3 px-4 py-3 text-left transition-colors hover:bg-white/5', !n.read && 'bg-brand-500/[0.06]')}
-                  >
-                    <span className={cx('grid h-9 w-9 shrink-0 place-items-center rounded-xl', n.read ? 'bg-white/5 text-white/40' : 'bg-brand-500/15 text-brand-400')}>
-                      <Icon size={17} />
-                    </span>
-                    <span className="min-w-0 flex-1">
-                      <span className={cx('block text-sm', n.read ? 'text-white/70' : 'font-semibold')}>{n.title}</span>
-                      {n.body && <span className="mt-0.5 line-clamp-2 block text-xs text-white/45">{n.body}</span>}
-                      <span className="mt-1 block text-[11px] text-white/35">{timeAgo(n.at)}</span>
-                    </span>
-                    {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-500" />}
-                  </button>
+                  <div key={n.id} className="group relative">
+                    <button
+                      onClick={() => openItem(n)}
+                      className={cx('flex w-full gap-3 py-3 pl-4 pr-10 text-left transition-colors hover:bg-white/5', !n.read && 'bg-brand-500/[0.06]')}
+                    >
+                      <span className={cx('grid h-9 w-9 shrink-0 place-items-center rounded-xl', n.read ? 'bg-white/5 text-white/40' : 'bg-brand-500/15 text-brand-400')}>
+                        <Icon size={17} />
+                      </span>
+                      <span className="min-w-0 flex-1">
+                        <span className={cx('block text-sm', n.read ? 'text-white/70' : 'font-semibold')}>{n.title}</span>
+                        {n.body && <span className="mt-0.5 line-clamp-2 block text-xs text-white/45">{n.body}</span>}
+                        <span className="mt-1 block text-[11px] text-white/35">{timeAgo(n.at)}</span>
+                      </span>
+                      {!n.read && <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-brand-500" />}
+                    </button>
+                    <button
+                      onClick={() => removeOne(n)}
+                      className="absolute right-2 top-2 rounded-lg p-1.5 text-white/30 opacity-100 transition hover:bg-white/10 hover:text-white sm:opacity-0 sm:group-hover:opacity-100 sm:focus:opacity-100"
+                      aria-label={`Remove notification: ${n.title}`}
+                      title="Remove"
+                    >
+                      <X size={14} />
+                    </button>
+                  </div>
                 );
               })}
             </div>

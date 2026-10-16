@@ -590,6 +590,8 @@ POST `/:id/cancel`:
 |---|---|
 | GET `/api/notifications` | `{unread, notifications:[{id, type, title, body, link, at, read}]}`, latest **30** |
 | POST `/api/notifications/read-all` | `{ok:true}` |
+| DELETE `/api/notifications` | Clears all of the user's notifications → `{ok:true, deleted}` |
+| DELETE `/api/notifications/:id` | Removes one notification → `{ok:true}` |
 | POST `/api/notifications/:id/read` | `{ok:true}` (silently ignores bad ids) |
 
 ### 2.12 `/api/admin` (A + admin email + verified)
@@ -1076,7 +1078,7 @@ Runs immediately, then every N ms, only while the screen is visible; runs again 
 ### Notification bell
 - **Button:** bell icon that wiggles when the unread count changes; red badge with the count ("9+" above 9).
 - **Panel:** full width on phones (below the header), 384 px dropdown on larger screens. Opening it reloads the list.
-- **Panel header:** "Notifications", plus **"Mark all read"** (only when there are unread items) → `POST /notifications/read-all`.
+- **Panel header:** "Notifications", plus **"Mark all read"** (only when there are unread items) → `POST /notifications/read-all`, and **"Clear all"** (when the list is not empty; asks to confirm) → `DELETE /notifications`. Each row has a small ✕ (on hover on desktop, always on phones) → `DELETE /notifications/:id`.
 - **List:** the 30 newest from `GET /notifications` → `{unread, notifications:[{id,type,title,body,link,at,read}]}`.
 - **Row:** type icon (highlighted if unread), title (bold if unread), body clamped to 2 lines, relative time ("just now", "5m ago", "3h ago", "yesterday", "4d ago"). Unread rows have a tinted background and a dot.
 - **Tap a row:** if unread → `POST /notifications/:id/read` (update the UI immediately), then open `link`.

@@ -30,6 +30,20 @@ router.post('/read-all', async (req, res) => {
   res.json({ ok: true });
 });
 
+// Clears the whole list (the bell's "Clear all").
+router.delete('/', async (req, res) => {
+  const { deletedCount } = await Notification.deleteMany({ user: req.user.id });
+  res.json({ ok: true, deleted: deletedCount });
+});
+
+// Removes one notification.
+router.delete('/:id', async (req, res) => {
+  if (mongoose.isValidObjectId(req.params.id)) {
+    await Notification.deleteOne({ _id: req.params.id, user: req.user.id });
+  }
+  res.json({ ok: true });
+});
+
 router.post('/:id/read', async (req, res) => {
   if (mongoose.isValidObjectId(req.params.id)) {
     await Notification.updateOne({ _id: req.params.id, user: req.user.id }, { readAt: new Date() });
