@@ -29,8 +29,8 @@ const ROLE_NOISE = new Set(['a', 'an', 'and', 'the', 'of', 'for', 'in', 'at', 't
 
 const roleWords = (role) => role.toLowerCase().split(/[\s/&()-]+/).filter((w) => w && !ROLE_NOISE.has(w));
 
-// Titles people use for the same kind of job. Searching one also finds the others, so
-// "Web Developer" finds Frontend and Full Stack developers too.
+// Titles people use for the same kind of job. Searching the first title of a group also
+// finds the rest, so "Web Developer" finds Frontend and Full Stack developers too.
 const ROLE_FAMILIES = [
   ['web developer', 'frontend developer', 'front end developer', 'full stack developer', 'fullstack developer', 'react developer', 'mern stack developer', 'javascript developer', 'ui developer', 'wordpress developer', 'php developer'],
   ['frontend developer', 'front end developer', 'web developer', 'react developer', 'ui developer', 'angular developer', 'javascript developer'],
@@ -73,7 +73,9 @@ function roleWhere(role) {
   const key = roleWords(role).join(' ');
   const titles = new Set([role]);
   for (const family of ROLE_FAMILIES) {
-    if (family.some((t) => roleWords(t).join(' ') === key)) family.forEach((t) => titles.add(t));
+    // Only the first title of a group opens it: "Software Engineer" covers Frontend and Backend,
+    // but "Frontend Developer" must not pull in Backend developers through that group.
+    if (roleWords(family[0]).join(' ') === key) family.forEach((t) => titles.add(t));
   }
   return { $or: [...titles].map(titleWhere) };
 }
