@@ -102,7 +102,8 @@ const ROLE_ALIASES = {
   'ecommerce manager': 'e-commerce manager',
 };
 
-function roleWhere(role) {
+// Every title a searched role covers: itself, its usual spelling and its related titles.
+function roleTitles(role) {
   const own = roleWords(role).join(' ');
   const key = roleWords(ROLE_ALIASES[own] || own).join(' ');
   const titles = new Set([role, ROLE_ALIASES[own] || role]);
@@ -111,7 +112,14 @@ function roleWhere(role) {
     // but "Frontend Developer" must not pull in Backend developers through that group.
     if (roleWords(family[0]).join(' ') === key) family.forEach((t) => titles.add(t));
   }
-  return { $or: [...titles].map(titleWhere) };
+  return [...titles];
+}
+const roleWhere = (role) => ({ $or: roleTitles(role).map(titleWhere) });
+
+// The same test in plain JS, for one candidate (used to explain the card).
+function roleMatches(p, roles) {
+  const fields = [p.headline, p.currentPost, ...(p.skills || [])].filter(Boolean);
+  return roles.some((r) => roleTitles(r).some((t) => titleRegexes(t).every((rx) => fields.some((v) => rx.test(v)))));
 }
 
 // Cleans filter input (query string or saved search) into a consistent shape.
@@ -166,6 +174,21 @@ export function feedFilters(q) {
   return and.length ? { $and: and } : {};
 }
 
+// When nobody with the searched role is left: people in the same area (and budget) who share
+// the wanted skills, or else the experience, or else the salary range. Null = no fallback.
+export function fallbackFilters(q) {
+  const f = normalizeFilters(q);
+  const where = feedFilters({ ...q, role: '' });
+  const and = where.$and ? [...where.$and] : [];
+  if (f.skills.length) and.push({ skills: { $in: f.skills.map((sk) => new RegExp(`^${escapeRegex(sk)}$`, 'i')) } });
+  else if (f.minExp !== null || f.maxExp !== null) {
+    and.push({ experienceYears: { ...(f.minExp !== null && { $gte: f.minExp }), ...(f.maxExp !== null && { $lte: f.maxExp }) } });
+  } else if (f.minSalary !== null || f.maxSalary !== null) {
+    and.push({ expectedSalary: { ...(f.minSalary !== null && { $gte: f.minSalary }), ...(f.maxSalary !== null && { $lte: f.maxSalary }) } });
+  } else return null;
+  return { $and: and };
+}
+
 // How well a candidate fits the filters, 0-100; the feed shows the best first.
 // Only the filters the company set count. Each one gives 0-1:
 // - role: their own title matches the searched words 1, a related title 0.7
@@ -184,6 +207,8 @@ const range = (lo, hi, unit) => (lo != null && hi != null ? `${lo}–${hi}${unit
 export function filterFit(p, q) {
   const f = normalizeFilters(q);
   const fit = [];
+  const roles = splitTerms(f.role);
+  if (roles.length && !roleMatches(p, roles)) fit.push({ key: 'role', ok: false, text: `${p.headline || 'Other role'}, not ${f.role}` });
   if (f.location && f.location !== ALL_INDIA) {
     const rx = areaRegex(f.location);
     const lives = rx.test(p.location || '');

@@ -434,6 +434,12 @@ export default function SwipePage() {
               </Link>
             )}
           </div>
+          {top?.fallback && (
+            <p className="mb-3 w-full max-w-[430px] rounded-2xl bg-amber-400/10 px-4 py-2.5 text-sm font-medium text-amber-300 ring-1 ring-amber-400/30">
+              No {filters.role || 'candidates for this role'} found{seen ? ` (you've seen all ${seen.total})` : ''}. Showing candidates with
+              matching skills, experience and salary.
+            </p>
+          )}
           {/* Height follows the top card; the whole page scrolls through it. */}
           <div className="relative mb-6 min-h-[60dvh] w-full max-w-[430px]">
             <AnimatePresence custom={exitDir}>

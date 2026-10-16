@@ -18,7 +18,7 @@ import { withSignedFiles } from '../utils/signedUrl.js';
 import { num, text, requireFields, stripUndefined } from '../utils/fields.js';
 import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { storeUpload } from '../utils/storage.js';
-import { feedFilters, filterFit, filterScore, hasFilters, normalizeFilters, strictFilters, toCard } from '../utils/candidates.js';
+import { fallbackFilters, feedFilters, filterFit, filterScore, hasFilters, normalizeFilters, strictFilters, toCard } from '../utils/candidates.js';
 import { feedRank } from '../utils/activity.js';
 import { publicJob, resolveFilterJob, resolveJob } from '../utils/jobs.js';
 import { notify } from '../utils/notify.js';
@@ -152,37 +152,49 @@ router.get('/feed', async (req, res) => {
 
   // Candidates the job can't afford (and who won't negotiate) can't be shortlisted, so
   // they aren't shown at all: no swipe credits are spent on them.
-  const profiles = await CandidateProfile.find({
-    step: 3,
-    openToWork: { $ne: false }, suspended: { $ne: true },
-    user: { $nin: [...swiped, ...exclude] },
-    ...feedFilters(req.query),
-  })
-    .populate('user', 'name avatarUrl')
-    .sort({ activeAt: -1 })
-    .limit(500)
-    .lean();
-
   // Best match with the filters first (experience, skills, notice, salary, work mode);
   // on a tie, active candidates before stale ones, then new joiners and the rest.
   const now = Date.now();
-  const candidates = profiles
-    .filter((p) => p.user)
-    .map((p) => {
-      const card = toCard(p, job, { wishlisted: wish.has(String(p.user._id)) });
-      const score = filterScore(p, req.query);
-      if (score !== null) card.matchScore = score;
-      card.fit = filterFit(p, req.query);
-      return { card, rank: feedRank(p, card.matchScore, now) };
+  const find = async (where, extra = {}) => {
+    const profiles = await CandidateProfile.find({
+      step: 3,
+      openToWork: { $ne: false }, suspended: { $ne: true },
+      user: { $nin: [...swiped, ...exclude] },
+      ...where,
     })
-    .sort((a, b) => b.card.matchScore - a.card.matchScore || a.rank.stale - b.rank.stale || b.rank.score - a.rank.score)
-    .slice(0, limit)
-    .map((x) => x.card);
+      .populate('user', 'name avatarUrl')
+      .sort({ activeAt: -1 })
+      .limit(500)
+      .lean();
+    return profiles
+      .filter((p) => p.user)
+      .map((p) => {
+        const card = toCard(p, job, { wishlisted: wish.has(String(p.user._id)), ...extra });
+        const score = filterScore(p, req.query);
+        if (score !== null) card.matchScore = score;
+        card.fit = filterFit(p, req.query);
+        return { card, rank: feedRank(p, card.matchScore, now) };
+      })
+      .sort((a, b) => b.card.matchScore - a.card.matchScore || a.rank.stale - b.rank.stale || b.rank.score - a.rank.score)
+      .slice(0, limit)
+      .map((x) => x.card);
+  };
+  let candidates = await find(feedFilters(req.query));
+  // Nobody (new) with that role: show people with the wanted skills / experience / salary
+  // instead, marked so the page can say so.
+  let fallback = false;
+  if (!candidates.length && filters.role) {
+    const where = fallbackFilters(req.query);
+    if (where) {
+      candidates = await find(where, { fallback: true });
+      fallback = candidates.length > 0;
+    }
+  }
 
   // Nothing new: say how many people match that this company has already swiped, so an
   // empty screen doesn't look like "nobody matches".
   let seen;
-  if (!candidates.length && !exclude.length) {
+  if ((!candidates.length || fallback) && !exclude.length) {
     const matched = await CandidateProfile.find({
       step: 3,
       openToWork: { $ne: false }, suspended: { $ne: true },
@@ -195,7 +207,7 @@ router.get('/feed', async (req, res) => {
     }
   }
 
-  res.json({ candidates, swipesLeft: company.swipesLeft, job: publicJob(job), ...(seen && { seen }) });
+  res.json({ candidates, swipesLeft: company.swipesLeft, job: publicJob(job), ...(seen && { seen }), ...(fallback && { fallback: true }) });
 });
 
 router.post('/swipe', async (req, res) => {
