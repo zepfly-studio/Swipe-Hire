@@ -17,6 +17,26 @@ const PUBLIC = {
     description:
       'Glide Recruit connects Indian companies and job seekers through resumes and 15-second intro videos. Learn how it works, its features, privacy and pricing.',
   },
+  '/how-it-works': {
+    title: 'How Glide Recruit Works – Profile, Swipe, Interview',
+    description: 'Candidates make one profile with a resume and a 15-second video; companies swipe to shortlist, then chat, send tasks and interview in one place.',
+  },
+  '/for-companies': {
+    title: 'Hire Faster in India – Glide Recruit for Companies',
+    description: 'See resume, intro video and match score on one card. Filter by role, skills, experience, salary and city, and shortlist the best candidates with a swipe.',
+  },
+  '/for-job-seekers': {
+    title: 'Get Hired Without Endless Applications – Glide Recruit for Job Seekers',
+    description: 'Make one free profile with your resume and a 15-second video. Companies come to you; your contact details stay private until they shortlist you.',
+  },
+  '/pricing': {
+    title: 'Pricing – Free for Job Seekers, Pay per Swipe for Companies | Glide Recruit',
+    description: 'Glide Recruit is free for candidates. Companies start with free swipes and buy swipe packs when they need more. No subscription.',
+  },
+  '/faq': {
+    title: 'FAQ – Glide Recruit Hiring Platform',
+    description: 'Answers to common questions about Glide Recruit: profiles, intro videos, privacy, salary, swipes and payments.',
+  },
   '/auth': {
     title: 'Sign Up or Log In – Glide Recruit',
     description:

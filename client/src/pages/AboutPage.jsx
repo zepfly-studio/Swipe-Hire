@@ -6,7 +6,7 @@ import {
 } from 'lucide-react';
 import Background from '../components/Background';
 import PublicHeader from '../components/PublicHeader';
-import Logo from '../components/Logo';
+import { SiteFooter } from '../components/marketing';
 import { useSite } from '../lib/site';
 
 const fade = { initial: { opacity: 0, y: 20 }, whileInView: { opacity: 1, y: 0 }, viewport: { once: true, margin: '-60px' }, transition: { duration: 0.45 } };
@@ -225,21 +225,7 @@ export default function AboutPage() {
         </section>
       </main>
 
-      <footer className="border-t border-white/10 px-4 py-10">
-        <div className="mx-auto flex max-w-6xl flex-col items-start justify-between gap-6 sm:flex-row sm:items-center">
-          <div>
-            <Logo tagline />
-            <p className="mt-3 text-sm text-white/45">© {new Date().getFullYear()} Glide Recruit. Made in India.</p>
-          </div>
-          <nav aria-label="Footer" className="flex flex-wrap gap-x-6 gap-y-2 text-sm font-semibold text-white/55">
-            <Link to="/" className="hover:text-white">Home</Link>
-            <Link to="/about" className="hover:text-white">About</Link>
-            <Link to="/auth?role=company" className="hover:text-white">For companies</Link>
-            <Link to="/auth" className="hover:text-white">For job seekers</Link>
-            <Link to="/auth?mode=login" className="hover:text-white">Log in</Link>
-          </nav>
-        </div>
-      </footer>
+      <SiteFooter />
     </div>
   );
 }

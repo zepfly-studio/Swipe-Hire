@@ -23,6 +23,12 @@ const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const InterviewsPage = lazy(() => import('./pages/InterviewsPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const marketing = (name) => lazy(() => import('./pages/MarketingPages').then((m) => ({ default: m[name] })));
+const HowItWorksPage = marketing('HowItWorksPage');
+const ForCompaniesPage = marketing('ForCompaniesPage');
+const ForJobSeekersPage = marketing('ForJobSeekersPage');
+const PricingPage = marketing('PricingPage');
+const FaqPage = marketing('FaqPage');
 const SupportPage = lazy(() => import('./pages/SupportPage'));
 const AdminAnalytics = lazy(() => import('./pages/admin/AdminAnalytics'));
 const AdminReports = lazy(() => import('./pages/admin/AdminReports'));
@@ -144,7 +150,9 @@ export default function App() {
   }, [location.pathname]);
   // Public pages (home, login) work without the API, so visitors and search engines still
   // see them if it's down; only the signed-in app shows the "can't reach" screen.
-  if (offline && !['/', '/auth', '/about', '/adminlogin'].includes(location.pathname)) return <OfflineScreen onRetry={refresh} />;
+  if (offline && !['/', '/auth', '/about', '/how-it-works', '/for-companies', '/for-job-seekers', '/pricing', '/faq', '/adminlogin'].includes(location.pathname)) {
+    return <OfflineScreen onRetry={refresh} />;
+  }
   // Maintenance mode: admins keep working; the admin login stays reachable.
   if (site.maintenance.on && !user?.isAdmin && !location.pathname.startsWith('/admin')) return <MaintenanceScreen message={site.maintenance.message} />;
   return (
@@ -154,6 +162,11 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<GuestOnly><Page><AuthPage /></Page></GuestOnly>} />
         <Route path="/about" element={<Page><AboutPage /></Page>} />
+        <Route path="/how-it-works" element={<Page><HowItWorksPage /></Page>} />
+        <Route path="/for-companies" element={<Page><ForCompaniesPage /></Page>} />
+        <Route path="/for-job-seekers" element={<Page><ForJobSeekersPage /></Page>} />
+        <Route path="/pricing" element={<Page><PricingPage /></Page>} />
+        <Route path="/faq" element={<Page><FaqPage /></Page>} />
         <Route path="/verify-email" element={<Unverified><Page><VerifyEmailPage /></Page></Unverified>} />
 
         <Route path="/candidate/onboarding" element={<Guard role="candidate"><Page><CandidateOnboarding /></Page></Guard>} />
