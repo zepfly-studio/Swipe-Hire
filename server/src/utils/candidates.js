@@ -75,9 +75,37 @@ function titleWhere(title) {
 }
 
 // A role matches its own words or any title from the same family.
+// Other ways people write the same title.
+const ROLE_ALIASES = {
+  'website developer': 'web developer',
+  'web site developer': 'web developer',
+  'website designer developer': 'web developer',
+  'web application developer': 'web developer',
+  'web programmer': 'web developer',
+  'front end developer': 'frontend developer',
+  'frontend engineer': 'frontend developer',
+  'back end developer': 'backend developer',
+  'backend engineer': 'backend developer',
+  'fullstack developer': 'full stack developer',
+  'full stack engineer': 'full stack developer',
+  'mern developer': 'full stack developer',
+  'mern stack developer': 'full stack developer',
+  'software developer': 'software engineer',
+  'ui ux designer': 'ui/ux designer',
+  'ux ui designer': 'ui/ux designer',
+  'hr recruiter': 'hr executive',
+  'tele caller': 'telecaller',
+  'tele sales executive': 'telecaller',
+  'accounts executive': 'accountant',
+  'customer care executive': 'customer support executive',
+  'customer service executive': 'customer support executive',
+  'ecommerce manager': 'e-commerce manager',
+};
+
 function roleWhere(role) {
-  const key = roleWords(role).join(' ');
-  const titles = new Set([role]);
+  const own = roleWords(role).join(' ');
+  const key = roleWords(ROLE_ALIASES[own] || own).join(' ');
+  const titles = new Set([role, ROLE_ALIASES[own] || role]);
   for (const family of ROLE_FAMILIES) {
     // Only the first title of a group opens it: "Software Engineer" covers Frontend and Backend,
     // but "Frontend Developer" must not pull in Backend developers through that group.
