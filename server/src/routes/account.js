@@ -1,14 +1,16 @@
 import { Router } from 'express';
 import bcrypt from 'bcryptjs';
-import { auth, startSession } from '../middleware/auth.js';
+import { auth, endSession, startSession } from '../middleware/auth.js';
 import { imageUpload, removeUpload, assertFileSignature } from '../middleware/upload.js';
 import { storeUpload } from '../utils/storage.js';
 import { User } from '../models/User.js';
 import { HttpError } from '../utils/HttpError.js';
 import { text } from '../utils/fields.js';
 import { session } from './auth.js';
+import { deleteAccount } from '../utils/deleteAccount.js';
+import { adminRoleOf } from '../utils/adminAccess.js';
 
-// The signed-in person's own account: name, phone, photo, password.
+// The signed-in person's own account: name, phone, photo, password, and deleting it.
 const router = Router();
 router.use(auth);
 
@@ -60,6 +62,20 @@ router.put('/password', async (req, res) => {
     { returnDocument: 'after' },
   ).select('+tokenVersion');
   res.json({ ok: true, ...startSession(req, res, updated) });
+});
+
+// Deletes your own account for good, after checking the password. A company owner takes the
+// whole company with them (team, pipeline, chats); a recruiter only removes their own login.
+// Payments are kept as financial records. Admin accounts are removed by changing ADMIN_EMAILS.
+router.delete('/', async (req, res) => {
+  const user = await User.findById(req.user.id).select('+password email emailVerified adminRole');
+  if (!(await bcrypt.compare(String(req.body?.password || ''), user.password))) {
+    throw new HttpError(400, 'Your password is not correct', { field: 'password' });
+  }
+  if (adminRoleOf(user)) throw new HttpError(400, 'Admin accounts cannot be deleted from here');
+  const out = await deleteAccount(user._id);
+  endSession(res);
+  res.json({ ok: true, ...out });
 });
 
 export default router;

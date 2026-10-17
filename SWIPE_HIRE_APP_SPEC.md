@@ -336,6 +336,7 @@ Legend:
 | POST `/api/account/avatar` | multipart field **`image`** (JPG/PNG/WebP, ≤3 MB) | session | 400 "Please choose a photo"; magic-byte check; the old file is deleted |
 | DELETE `/api/account/avatar` | | session | |
 | PUT `/api/account/password` | `{current, next}` | `{ok:true, token?}` | 400 "New password must be at least 6 characters" (`field:next`); 400 "Your current password is not correct" (`field:current`). Bumps `tokenVersion` (logs out everywhere) and issues a new cookie/token |
+| DELETE `/api/account` | `{password}` | `{ok:true, role, removedUsers}`; the login cookie is cleared | 400 "Your password is not correct" (`field:password`); 400 for admin accounts. A company owner deletes the whole company (team, pipeline, chats); a recruiter only their own login; payments are kept. Google Play requires this "Delete account" option in the app too |
 
 **There is no delete-account endpoint** anywhere in the backend.
 

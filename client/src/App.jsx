@@ -24,6 +24,11 @@ const InterviewsPage = lazy(() => import('./pages/InterviewsPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
 const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
+const legal = (name) => lazy(() => import('./pages/LegalPages').then((m) => ({ default: m[name] })));
+const TermsPage = legal('TermsPage');
+const PrivacyPage = legal('PrivacyPage');
+const RefundPage = legal('RefundPage');
+const ContactPage = legal('ContactPage');
 const marketing = (name) => lazy(() => import('./pages/MarketingPages').then((m) => ({ default: m[name] })));
 const HowItWorksPage = marketing('HowItWorksPage');
 const ForCompaniesPage = marketing('ForCompaniesPage');
@@ -95,10 +100,18 @@ function Home() {
   return <LandingPage />;
 }
 
+// Inside the logged-in app and the admin panel, pages switch without a full-screen fade, so
+// the header and sidebar stay put (they only fade when moving between site, app and admin).
+const APP_PREFIXES = ['/candidate', '/company', '/messages', '/interviews', '/tasks', '/settings', '/support'];
+const sectionOf = (path) =>
+  path.startsWith('/admin/') || path === '/admin' ? 'admin' : APP_PREFIXES.some((p) => path === p || path.startsWith(`${p}/`)) ? 'app' : path;
+
 function Page({ children }) {
+  const { pathname } = useLocation();
+  const inApp = sectionOf(pathname) !== pathname;
   return (
     // Opacity only: a transform here would break position:fixed children.
-    <motion.div initial={{ opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
+    <motion.div initial={inApp ? false : { opacity: 0 }} animate={{ opacity: 1 }} exit={{ opacity: 0 }} transition={{ duration: 0.22 }}>
       <Suspense fallback={<Spinner className="min-h-dvh" />}>{children}</Suspense>
     </motion.div>
   );
@@ -140,6 +153,10 @@ export default function App() {
   const site = useSite();
   // Title, description, canonical and robots for each page.
   useEffect(() => applyRouteMeta(location.pathname), [location.pathname]);
+  // A new page starts at the top (links to a #section scroll there themselves).
+  useEffect(() => {
+    if (!location.hash) window.scrollTo(0, 0);
+  }, [location.pathname, location.hash]);
   // Admin-enabled third-party tools: start them on public pages and report page views
   // (the first one is sent by the tools themselves when they load).
   const firstPage = useRef(true);
@@ -151,7 +168,7 @@ export default function App() {
   }, [location.pathname]);
   // Public pages (home, login) work without the API, so visitors and search engines still
   // see them if it's down; only the signed-in app shows the "can't reach" screen.
-  if (offline && !['/', '/auth', '/about', '/how-it-works', '/for-companies', '/for-job-seekers', '/pricing', '/faq', '/adminlogin'].includes(location.pathname)) {
+  if (offline && !['/', '/auth', '/about', '/how-it-works', '/for-companies', '/for-job-seekers', '/pricing', '/faq', '/terms', '/privacy', '/refund-policy', '/contact', '/adminlogin'].includes(location.pathname)) {
     return <OfflineScreen onRetry={refresh} />;
   }
   // Maintenance mode: admins keep working; the admin login stays reachable.
@@ -159,7 +176,7 @@ export default function App() {
   return (
     <>
     <AnimatePresence mode="wait">
-      <Routes location={location} key={location.pathname}>
+      <Routes location={location} key={sectionOf(location.pathname)}>
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<GuestOnly><Page><AuthPage /></Page></GuestOnly>} />
         <Route path="/about" element={<Page><AboutPage /></Page>} />
@@ -169,6 +186,10 @@ export default function App() {
         <Route path="/for-job-seekers" element={<Page><ForJobSeekersPage /></Page>} />
         <Route path="/pricing" element={<Page><PricingPage /></Page>} />
         <Route path="/faq" element={<Page><FaqPage /></Page>} />
+        <Route path="/terms" element={<Page><TermsPage /></Page>} />
+        <Route path="/privacy" element={<Page><PrivacyPage /></Page>} />
+        <Route path="/refund-policy" element={<Page><RefundPage /></Page>} />
+        <Route path="/contact" element={<Page><ContactPage /></Page>} />
         <Route path="/verify-email" element={<Unverified><Page><VerifyEmailPage /></Page></Unverified>} />
 
         <Route path="/candidate/onboarding" element={<Guard role="candidate"><Page><CandidateOnboarding /></Page></Guard>} />

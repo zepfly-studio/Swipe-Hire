@@ -1,10 +1,9 @@
-import { useEffect, useState } from 'react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { BadgeCheck, Briefcase, Building2, CalendarClock, IndianRupee, MessageCircle, ShieldAlert, Users } from 'lucide-react';
-import toast from 'react-hot-toast';
 import { Spinner } from '../../components/ui';
-import { api, cx, errorMessage } from '../../lib/api';
-import AdminShell, { dateOf, Pill, useLive } from './AdminShell';
+import { cx } from '../../lib/api';
+import AdminShell, { dateOf, Pill, useAdminStats } from './AdminShell';
 import UserDetail from './UserDetail';
 
 // Chart colours validated for colour-blind separation (green vs blue).
@@ -99,18 +98,8 @@ function SignupChart({ days }) {
 }
 
 export default function AdminOverview() {
-  const [s, setS] = useState(null);
+  const [s, load] = useAdminStats();
   const [open, setOpen] = useState(null);
-
-  const load = () =>
-    api
-      .get('/admin/stats')
-      .then(({ data }) => setS(data))
-      .catch((err) => toast.error(errorMessage(err)));
-  useEffect(() => {
-    load();
-  }, []);
-  useLive(() => api.get('/admin/stats').then(({ data }) => setS(data)).catch(() => {}));
 
   return (
     <AdminShell title="Overview" subtitle="Everything happening on Glide Recruit at a glance.">

@@ -9,6 +9,8 @@ import Logo from '../../components/Logo';
 import { Spinner } from '../../components/ui';
 import { useAuth } from '../../context/AuthContext';
 import { api, cx } from '../../lib/api';
+import { useShared } from '../../hooks/useShared';
+import { preloadAdminPages } from '../../lib/preload';
 
 // Sidebar sections. `perm` hides a link from admins whose role can't use it; `badge` is a queue count.
 const GROUPS = [
@@ -111,6 +113,10 @@ export function useLive(refresh, { ms = 12000, paused = false } = {}) {
   }, [ms, paused]);
 }
 
+// Platform numbers and the sidebar badges (open reports, tickets...): one shared copy for the
+// whole admin panel, refreshed every 12 s, so changing pages doesn't ask for it again.
+export const useAdminStats = () => useShared('admin-stats', () => api.get('/admin/stats').then(({ data }) => data), 12000);
+
 export function AdminGuard({ children }) {
   const { loading, user } = useAuth();
   if (loading) return <Spinner className="min-h-dvh" />;
@@ -121,20 +127,11 @@ export function AdminGuard({ children }) {
 // Admin layout: sidebar on desktop, scrollable tabs on phones.
 export default function AdminShell({ title, subtitle, actions, children }) {
   const { user, logout } = useAuth();
+  useEffect(preloadAdminPages, []);
   const navigate = useNavigate();
-  const [queues, setQueues] = useState({});
+  const [stats] = useAdminStats();
+  const queues = stats?.queues || {};
   const can = useCan();
-
-  // Sidebar badges (open reports, tickets...) stay current on every page.
-  const loadQueues = () =>
-    api
-      .get('/admin/stats')
-      .then(({ data }) => setQueues(data.queues || {}))
-      .catch(() => {});
-  useEffect(() => {
-    loadQueues();
-  }, []);
-  useLive(loadQueues);
 
   const signOut = () => {
     api.post('/admin-auth/logout').catch(() => {});

@@ -54,8 +54,14 @@ export function SiteFooter() {
               {label}
             </Link>
           ))}
+          <Link to="/contact" className="hover:text-white">Contact</Link>
           <Link to="/auth?mode=login" className="hover:text-white">Log in</Link>
         </nav>
+      </div>
+      <div className="mx-auto mt-6 flex max-w-6xl flex-wrap gap-x-5 gap-y-1 border-t border-white/10 pt-5 text-xs font-semibold text-white/45">
+        <Link to="/terms" className="hover:text-white">Terms of Service</Link>
+        <Link to="/privacy" className="hover:text-white">Privacy Policy</Link>
+        <Link to="/refund-policy" className="hover:text-white">Refund Policy</Link>
       </div>
     </footer>
   );

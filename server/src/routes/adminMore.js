@@ -495,7 +495,12 @@ router.put('/settings/content', perm('settings'), async (req, res) => {
     faq = b.faq.map((f) => ({ q: text(f.q, 200), a: text(f.a, 1000) })).filter((f) => f.q && f.a).slice(0, 20);
     if (!faq.length) faq = null;
   }
-  const content = { faq, aboutIntro: text(b.aboutIntro, 1000) || '' };
+  // Contact details for the Contact page and the legal pages (also needed for Razorpay).
+  const c = b.contact || {};
+  const contactEmail = text(c.email, 120) || '';
+  if (contactEmail && !/^[^\s@]+@[^\s@]+\.[^\s@]+$/.test(contactEmail)) throw new HttpError(400, 'Enter a valid contact email', { field: 'contactEmail' });
+  const contact = { business: text(c.business, 120) || '', email: contactEmail, phone: text(c.phone, 20) || '', address: text(c.address, 300) || '' };
+  const content = { faq, aboutIntro: text(b.aboutIntro, 1000) || '', contact };
   await setSetting('content', content, req.user.id);
   await logAdmin(req, 'settings.content', { targetType: 'setting', summary: `FAQ: ${faq ? faq.length : 'default'}, about intro ${content.aboutIntro ? 'custom' : 'default'}` });
   res.json({ ok: true, content });

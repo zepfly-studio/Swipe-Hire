@@ -10,7 +10,8 @@ import Logo from './Logo';
 import NotificationBell from './NotificationBell';
 import Avatar from './Avatar';
 import { useAuth } from '../context/AuthContext';
-import { usePoll } from '../hooks/usePoll';
+import { useShared } from '../hooks/useShared';
+import { preloadAppPages } from '../lib/preload';
 import { api, cx } from '../lib/api';
 
 // Wishlist and Tasks are desktop-only in the company nav; on phones Wishlist is linked
@@ -165,8 +166,9 @@ export default function AppShell({ children }) {
   const isCompany = user.role === 'company';
   const links = isCompany ? COMPANY_LINKS : CANDIDATE_LINKS;
   const mobileLinks = links.filter((l) => !l.desktopOnly);
-  const [unread, setUnread] = useState(0);
-  usePoll(() => api.get('/chats/unread-count').then(({ data }) => setUnread(data.count)).catch(() => {}), 15000);
+  useEffect(() => preloadAppPages(user.role), [user.role]);
+  // Unread chats for the Messages badge: shared and refreshed every 15 s, not on every page change.
+  const [unread = 0] = useShared('chat-unread', () => api.get('/chats/unread-count').then(({ data }) => data.count), 15000);
   const badges = { messages: unread };
 
   return (

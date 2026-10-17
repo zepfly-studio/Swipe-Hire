@@ -1,6 +1,7 @@
 import { createContext, useCallback, useContext, useEffect, useState } from 'react';
 import { api } from '../lib/api';
 import { clearAllDrafts } from '../hooks/useDraft';
+import { resetShared } from '../hooks/useShared';
 
 const AuthContext = createContext(null);
 
@@ -38,12 +39,14 @@ export function AuthProvider({ children }) {
 
   // The API has already set the login cookie by the time this runs.
   const signIn = useCallback(({ user, profile }) => {
+    resetShared();
     setState({ loading: false, user, profile, offline: false });
   }, []);
 
   const logout = useCallback(() => {
     api.post('/auth/logout').catch(() => {});
     clearAllDrafts();
+    resetShared();
     setState({ loading: false, user: null, profile: null, offline: false });
   }, []);
 

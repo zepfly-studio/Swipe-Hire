@@ -37,6 +37,10 @@ const PUBLIC = {
     title: 'FAQ – Glide Recruit Hiring Platform',
     description: 'Answers to common questions about Glide Recruit: profiles, intro videos, privacy, salary, swipes and payments.',
   },
+  '/terms': { title: 'Terms of Service – Glide Recruit', description: 'The terms for using Glide Recruit, the hiring platform for companies and job seekers in India.' },
+  '/privacy': { title: 'Privacy Policy – Glide Recruit', description: 'What Glide Recruit collects, how it is used, who can see it and how to delete your account.' },
+  '/refund-policy': { title: 'Refund & Cancellation Policy – Glide Recruit', description: 'Refunds for Glide Recruit swipe packs: unused packs within 7 days, payment problems and how to ask.' },
+  '/contact': { title: 'Contact Glide Recruit', description: 'Email, phone and address for Glide Recruit, or open a request in Help & support.' },
   '/auth': {
     title: 'Sign Up or Log In – Glide Recruit',
     description:

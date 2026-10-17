@@ -170,6 +170,11 @@ export function roleTitles(role) {
   return [...titles];
 }
 const roleWhere = (role) => ({ $or: roleTitles(role).map(titleWhere) });
+// The searched role in its usual spelling: "Website Develper" -> "web developer".
+const ownTitle = (role) => {
+  const fixed = fixRole(role);
+  return ROLE_ALIASES[fixed] || fixed || role;
+};
 
 // ---------------------------------------------------------------------------------------
 // Filters
@@ -276,7 +281,7 @@ export function filterScore(p = {}, q) {
   const parts = [];
   const roles = splitTerms(f.role);
   if (roles.length) {
-    const own = roles.some((r) => titleRegexes(fixRole(r) || r).every((rx) => rx.test(p.headline || '') || rx.test(p.currentPost || '')));
+    const own = roles.some((r) => titleRegexes(ownTitle(r)).every((rx) => rx.test(p.headline || '') || rx.test(p.currentPost || '')));
     parts.push(['role', own ? 1 : 0.7]);
   }
   if (f.skills.length) {

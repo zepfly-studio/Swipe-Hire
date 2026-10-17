@@ -7,11 +7,12 @@ import { api, errorMessage } from '../../lib/api';
 import { DEFAULT_FAQ } from '../../lib/faq';
 import AdminShell from './AdminShell';
 
-// Editable website text (FAQ, About intro) and extra suggestion words.
+// Editable website text (FAQ, About intro, contact details) and extra suggestion words.
 export default function AdminContent() {
   const [faq, setFaq] = useState(null);
   const [custom, setCustom] = useState(false);
   const [about, setAbout] = useState('');
+  const [contact, setContact] = useState({ business: '', email: '', phone: '', address: '' });
   const [lists, setLists] = useState(null);
   const [busy, setBusy] = useState('');
 
@@ -22,6 +23,7 @@ export default function AdminContent() {
         setCustom(Boolean(data.content.faq));
         setFaq(data.content.faq || DEFAULT_FAQ.map((f) => ({ ...f })));
         setAbout(data.content.aboutIntro || '');
+        setContact({ business: '', email: '', phone: '', address: '', ...data.content.contact });
         setLists(data.taxonomy);
       })
       .catch((err) => toast.error(errorMessage(err)));
@@ -30,7 +32,7 @@ export default function AdminContent() {
   const saveContent = async (useDefault = false) => {
     setBusy('content');
     try {
-      await api.put('/admin/settings/content', { faq: useDefault ? null : faq, aboutIntro: about });
+      await api.put('/admin/settings/content', { faq: useDefault ? null : faq, aboutIntro: about, contact });
       if (useDefault) {
         setFaq(DEFAULT_FAQ.map((f) => ({ ...f })));
         setCustom(false);
@@ -66,6 +68,28 @@ export default function AdminContent() {
   return (
     <AdminShell title="Content & lists" subtitle="Change the FAQ and About text on the website, and add skills, cities and job titles to the suggestion lists.">
       <div className="space-y-4">
+        <section className="glass rounded-3xl p-5">
+          <h2 className="font-bold">Contact details</h2>
+          <p className="text-sm text-white/50">Shown on the Contact page and in the Terms, Privacy and Refund pages. Razorpay checks these before turning on live payments.</p>
+          <div className="mt-4 grid gap-3 sm:grid-cols-2">
+            <Field label="Business name">
+              <Input value={contact.business} onChange={(e) => setContact((c) => ({ ...c, business: e.target.value }))} maxLength={120} placeholder="e.g. Zepfly Studio" />
+            </Field>
+            <Field label="Contact email">
+              <Input type="email" value={contact.email} onChange={(e) => setContact((c) => ({ ...c, email: e.target.value }))} maxLength={120} placeholder="support@yourdomain.com" />
+            </Field>
+            <Field label="Phone">
+              <Input value={contact.phone} onChange={(e) => setContact((c) => ({ ...c, phone: e.target.value }))} maxLength={20} placeholder="+91 98765 43210" />
+            </Field>
+            <Field label="Address">
+              <Input value={contact.address} onChange={(e) => setContact((c) => ({ ...c, address: e.target.value }))} maxLength={300} placeholder="Office address, city, state, PIN" />
+            </Field>
+          </div>
+          <Button className="btn-primary mt-4" onClick={() => saveContent(!custom)} loading={busy === 'content'}>
+            <Save size={16} /> Save contact details
+          </Button>
+        </section>
+
         <section className="glass rounded-3xl p-5">
           <div className="flex flex-wrap items-center justify-between gap-3">
             <div>

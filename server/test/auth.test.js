@@ -49,3 +49,13 @@ test('right code sets the new password, signs in and ends old logins', async () 
   const again = await api.call('POST', '/auth/password/reset', { email: 'reset@auth.test', code: sent.data.devCode, password: 'other-pass1' });
   assert.equal(again.status, 400, 'a code works only once');
 });
+
+test('deleting your own account needs the right password', async () => {
+  const token = await api.signUp('Leaving Person', 'leave@auth.test', 'candidate', 'leave-pass1');
+  const wrong = await api.call('DELETE', '/account', { password: 'nope' }, token);
+  assert.equal(wrong.status, 400);
+  const ok = await api.call('DELETE', '/account', { password: 'leave-pass1' }, token);
+  assert.equal(ok.status, 200);
+  assert.equal(await User.exists({ email: 'leave@auth.test' }), null);
+  assert.equal((await api.call('POST', '/auth/login', { email: 'leave@auth.test', password: 'leave-pass1' })).status, 401);
+});

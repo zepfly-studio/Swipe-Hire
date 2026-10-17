@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
-import { Building2, KeyRound, Lock, LogOut, Mail, Phone, User, UserCog } from 'lucide-react';
+import { Building2, KeyRound, Lock, LogOut, Mail, Phone, Trash2, User, UserCog } from 'lucide-react';
 import toast from 'react-hot-toast';
 import AppShell from '../components/AppShell';
 import ImageUploader from '../components/ImageUploader';
@@ -39,6 +39,24 @@ export default function SettingsPage() {
     }
   };
   const isCompany = user.role === 'company';
+
+  // Deleting your own account: needs the password and typing DELETE.
+  const [del, setDel] = useState({ password: '', confirm: '' });
+  const [delError, setDelError] = useState('');
+  const [deleting, setDeleting] = useState(false);
+  const deleteMyAccount = async () => {
+    if (del.confirm.trim() !== 'DELETE') return setDelError('Type DELETE to confirm');
+    setDelError('');
+    setDeleting(true);
+    try {
+      await api.delete('/account', { data: { password: del.password } });
+      logout();
+      toast.success('Your account was deleted');
+    } catch (err) {
+      setDelError(errorMessage(err));
+      setDeleting(false);
+    }
+  };
   const [form, setForm] = useState({ name: user.name, phone: user.phone ?? '' });
   const [errors, setErrors] = useState({});
   const [saving, setSaving] = useState(false);
@@ -164,6 +182,29 @@ export default function SettingsPage() {
               Log out of all devices
             </Button>
           </div>
+        </Section>
+
+        <Section icon={Trash2} title="Delete account">
+          <p className="text-sm text-white/60">
+            {isCompany && user.isOwner
+              ? 'This deletes your company account for good: your team, saved searches, shortlists, chats, tasks and interviews. Payment records are kept for accounts.'
+              : isCompany
+                ? 'This removes your login from the company team. The company account stays.'
+                : 'This deletes your profile, resume, intro video, chats, tasks and interviews for good. Companies will no longer see you.'}
+          </p>
+          <div className="grid gap-4 sm:grid-cols-2">
+            <Field label="Your password">
+              <Input icon={Lock} type="password" autoComplete="current-password" value={del.password} onChange={(e) => setDel((d) => ({ ...d, password: e.target.value }))} />
+            </Field>
+            <Field label='Type "DELETE" to confirm'>
+              <Input value={del.confirm} onChange={(e) => setDel((d) => ({ ...d, confirm: e.target.value }))} placeholder="DELETE" aria-label="Type DELETE to confirm" />
+            </Field>
+          </div>
+          {delError && <p className="text-sm font-medium text-danger">{delError}</p>}
+          <Button className="btn-ghost text-danger" onClick={deleteMyAccount} loading={deleting} disabled={!del.password || !del.confirm}>
+            <Trash2 size={16} />
+            Delete my account
+          </Button>
         </Section>
       </div>
     </AppShell>

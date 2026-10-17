@@ -222,6 +222,13 @@ export default function AuthPage() {
               <Button type="submit" loading={loading} className="btn-primary mt-2 w-full py-3.5">
                 {mode === 'register' ? 'Create account' : 'Log in'}
               </Button>
+              {mode === 'register' && (
+                <p className="text-center text-xs text-white/45">
+                  By creating an account you agree to our{' '}
+                  <Link to="/terms" className="font-semibold text-white/70 hover:underline">Terms</Link> and{' '}
+                  <Link to="/privacy" className="font-semibold text-white/70 hover:underline">Privacy Policy</Link>.
+                </p>
+              )}
             </form>
           </motion.div>
         </motion.section>

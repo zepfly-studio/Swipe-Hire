@@ -5,11 +5,20 @@
 export const PUBLIC_PAGES = [
   { path: '/', changefreq: 'weekly', priority: '1.0' },
   { path: '/about', changefreq: 'monthly', priority: '0.7' },
+  { path: '/how-it-works', changefreq: 'monthly', priority: '0.8' },
+  { path: '/for-companies', changefreq: 'monthly', priority: '0.8' },
+  { path: '/for-job-seekers', changefreq: 'monthly', priority: '0.8' },
+  { path: '/pricing', changefreq: 'monthly', priority: '0.8' },
+  { path: '/faq', changefreq: 'monthly', priority: '0.7' },
+  { path: '/contact', changefreq: 'yearly', priority: '0.5' },
+  { path: '/terms', changefreq: 'yearly', priority: '0.3' },
+  { path: '/privacy', changefreq: 'yearly', priority: '0.3' },
+  { path: '/refund-policy', changefreq: 'yearly', priority: '0.3' },
   { path: '/auth', changefreq: 'monthly', priority: '0.6' },
 ];
 
 // Logged-in areas: no value in search results, and they only show a login redirect.
-const PRIVATE_PREFIXES = ['/api/', '/uploads/', '/candidate', '/company/', '/messages', '/interviews', '/tasks', '/settings', '/admin', '/support', '/join', '/verify-email'];
+const PRIVATE_PREFIXES = ['/forgot-password', '/api/', '/uploads/', '/candidate', '/company/', '/messages', '/interviews', '/tasks', '/settings', '/admin', '/support', '/join', '/verify-email'];
 
 export function seoFiles(siteUrl) {
   const today = new Date().toISOString().slice(0, 10);

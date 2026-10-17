@@ -63,6 +63,12 @@ test('role: groups, aliases and no leaking between groups', () => {
   assert.ok(roleTitles('Mobile Developer').includes('react native developer'));
 });
 
+test('score: other spellings of a role score the same as the usual one', () => {
+  const q = (role) => filterScore(good, { role, skills: 'HTML' });
+  assert.equal(q('Website Develper'), q('Web Developer'));
+  assert.equal(q('web dev'), q('Web Developer'));
+});
+
 test('score: everything matching is 100', () => {
   assert.equal(filterScore(good, full), 100);
 });

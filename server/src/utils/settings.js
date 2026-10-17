@@ -33,8 +33,9 @@ export const adminTwoStep = () => getSetting('adminTwoStep', true);
 
 // Extra suggestion words added by admins on top of shared/taxonomy.js.
 export const taxonomyExtra = () => getSetting('taxonomy', { skills: [], cities: [], roles: [] });
-// Editable public content: FAQ (null = the built-in one) and the About page intro.
-export const siteContent = () => getSetting('content', { faq: null, aboutIntro: '' });
+// Editable public content: FAQ (null = the built-in one), the About page intro and the
+// contact details shown on the Contact and legal pages.
+export const siteContent = () => ({ faq: null, aboutIntro: '', contact: { business: '', email: '', phone: '', address: '' }, ...getSetting('content', {}) });
 
 // Third-party tools switched on from the admin panel (analytics, chat widgets, WhatsApp button).
 export const INTEGRATION_DEFAULTS = {

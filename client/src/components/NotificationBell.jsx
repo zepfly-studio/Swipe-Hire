@@ -3,7 +3,7 @@ import { useNavigate } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BadgeCheck, Bell, BellRing, CalendarClock, CheckCheck, ClipboardList, LifeBuoy, Megaphone, MessageCircle, PartyPopper, Sparkles, Trash2, X } from 'lucide-react';
 import { api, cx } from '../lib/api';
-import { usePoll } from '../hooks/usePoll';
+import { refreshShared, setShared, useShared } from '../hooks/useShared';
 import Illustration from './Illustration';
 
 const ICONS = {
@@ -32,11 +32,13 @@ export function timeAgo(date) {
 export default function NotificationBell() {
   const navigate = useNavigate();
   const [open, setOpen] = useState(false);
-  const [data, setData] = useState({ unread: 0, notifications: [] });
+  // One shared copy for the whole app, refreshed every 30 s (pages changing reuse it).
+  const [shared] = useShared('notifications', () => api.get('/notifications').then(({ data: d }) => d), 30000);
+  const data = shared || { unread: 0, notifications: [] };
+  const setData = (update) => setShared('notifications', (d) => (typeof update === 'function' ? update(d || { unread: 0, notifications: [] }) : update));
   const ref = useRef(null);
 
-  const load = () => api.get('/notifications').then(({ data: d }) => setData(d)).catch(() => {});
-  usePoll(load, 30000);
+  const load = () => refreshShared('notifications');
 
   useEffect(() => {
     if (!open) return;
