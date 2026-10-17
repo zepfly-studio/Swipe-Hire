@@ -14,6 +14,14 @@ function filterSummary(filters = {}) {
     filters.minExp != null || filters.maxExp != null
       ? `${filters.minExp ?? 0}–${filters.maxExp ?? 'Any'} yrs`
       : null,
+    filters.minSalary != null || filters.maxSalary != null
+      ? `₹${filters.minSalary ?? 0}–${filters.maxSalary ?? 'Any'} LPA`
+      : null,
+    // Older saved searches have a single workMode.
+    [...(filters.workModes || []), ...(filters.workMode ? [filters.workMode] : [])]
+      .map((m) => ({ onsite: 'On-site', hybrid: 'Hybrid', remote: 'Remote' })[m])
+      .join(' / ') || null,
+    filters.notice?.length ? `Notice: ${filters.notice.join(', ')}` : null,
     filters.skills?.length ? filters.skills.join(', ') : null,
   ].filter(Boolean);
 }

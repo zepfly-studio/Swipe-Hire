@@ -200,6 +200,69 @@ router.post('/email/verify', auth, async (req, res) => {
   res.json(await session(user));
 });
 
+// ---- Forgot password: a 6-digit code to the account's email, then a new password ----
+const RESET_MAX_SENDS = 5; // per day
+const RESET_SENT = 'If an account exists for this email, we sent a 6-digit code to it.';
+
+// Always answers the same way, so it can't be used to find out who has an account.
+router.post('/password/forgot', fromApp, limiter, async (req, res) => {
+  const email = String(req.body?.email || '').toLowerCase().trim();
+  if (!EMAIL_RE.test(email)) throw new HttpError(400, 'Please enter a valid email address', { field: 'email' });
+  const user = await User.findOne({ email }).select('+resetOtp');
+  if (!user || user.suspended) return res.json({ message: RESET_SENT });
+
+  const now = Date.now();
+  const prev = user.resetOtp;
+  if (prev?.sentAt && now - prev.sentAt < OTP_COOLDOWN && prev.expires > now) {
+    return res.json({ message: RESET_SENT, retryIn: Math.ceil((OTP_COOLDOWN - (now - prev.sentAt)) / 1000) });
+  }
+  const sameDay = prev?.windowStart && now - prev.windowStart < OTP_WINDOW;
+  const sends = sameDay ? prev.sends || 0 : 0;
+  if (sends >= RESET_MAX_SENDS) throw new HttpError(429, 'Too many codes requested today. Please try again tomorrow.');
+
+  const code = String(crypto.randomInt(100000, 1000000));
+  user.resetOtp = { hash: hashCode(code), expires: new Date(now + OTP_TTL), sentAt: new Date(now), tries: 0, sends: sends + 1, windowStart: sameDay ? prev.windowStart : new Date(now) };
+  await user.save();
+  try {
+    await sendMail({
+      to: user.email,
+      subject: `${code} is your Glide Recruit password reset code`,
+      text: `Hi ${user.name.split(' ')[0]},\n\nUse this code to set a new password: ${code}\nIt expires in 15 minutes.\n\nIf you didn't ask for this, you can ignore this email; your password stays the same.\n\n— Team Glide Recruit`,
+    });
+  } catch (err) {
+    console.error('[mail] reset code not sent:', err.message);
+    if (!showCodeOnScreen()) {
+      await User.updateOne({ _id: user._id }, { $unset: { 'resetOtp.sentAt': 1 } });
+      throw new HttpError(502, "We couldn't send the email right now. Please try again in a minute.");
+    }
+  }
+  // Testing mode only: the code is shown on screen as well.
+  res.json({ message: RESET_SENT, retryIn: OTP_COOLDOWN / 1000, ...(showCodeOnScreen() && { devCode: code }) });
+});
+
+// Code + new password -> password changed, every other login ended, and signed in here.
+router.post('/password/reset', fromApp, limiter, async (req, res) => {
+  const email = String(req.body?.email || '').toLowerCase().trim();
+  const { code, password } = req.body ?? {};
+  if (typeof password !== 'string' || password.length < 6) throw new HttpError(400, 'Password must be at least 6 characters', { field: 'password' });
+  const user = await User.findOne({ email }).select('+resetOtp +tokenVersion');
+  const otp = user?.resetOtp;
+  if (!user || user.suspended || !otp?.hash || otp.expires < new Date()) {
+    throw new HttpError(400, 'This code has expired. Ask for a new one.', { field: 'code' });
+  }
+  if ((otp.tries || 0) >= 5) throw new HttpError(429, 'Too many wrong attempts. Ask for a new code.', { field: 'code' });
+  if (hashCode(String(code ?? '').trim()) !== otp.hash) {
+    await User.updateOne({ _id: user._id }, { $inc: { 'resetOtp.tries': 1 } });
+    throw new HttpError(400, 'Wrong code, please check and try again', { field: 'code' });
+  }
+  user.password = await bcrypt.hash(password, 10);
+  user.resetOtp = undefined;
+  user.emailVerified = true; // they just proved they own the email
+  user.tokenVersion = (user.tokenVersion || 0) + 1;
+  await user.save();
+  res.json({ ...startSession(req, res, user), ...(await session(user)) });
+});
+
 // No auth needed: an expired login must still be able to clear its cookie.
 router.post('/logout', (_req, res) => {
   endSession(res);

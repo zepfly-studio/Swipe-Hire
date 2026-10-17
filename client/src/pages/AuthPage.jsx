@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { useNavigate, useSearchParams } from 'react-router-dom';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { motion, AnimatePresence } from 'framer-motion';
 import { BadgeCheck, Briefcase, Building2, Eye, EyeOff, FileText, Lock, Mail, User, Video } from 'lucide-react';
 import toast from 'react-hot-toast';
@@ -210,6 +210,14 @@ export default function AuthPage() {
                   }
                 />
               </Field>
+
+              {mode === 'login' && (
+                <div className="-mt-1 text-right">
+                  <Link to={`/forgot-password${form.email ? `?email=${encodeURIComponent(form.email)}` : ''}`} className="text-sm font-semibold text-brand-500 hover:underline">
+                    Forgot password?
+                  </Link>
+                </div>
+              )}
 
               <Button type="submit" loading={loading} className="btn-primary mt-2 w-full py-3.5">
                 {mode === 'register' ? 'Create account' : 'Log in'}

@@ -23,6 +23,7 @@ const MessagesPage = lazy(() => import('./pages/MessagesPage'));
 const InterviewsPage = lazy(() => import('./pages/InterviewsPage'));
 const TasksPage = lazy(() => import('./pages/TasksPage'));
 const AboutPage = lazy(() => import('./pages/AboutPage'));
+const ForgotPasswordPage = lazy(() => import('./pages/ForgotPasswordPage'));
 const marketing = (name) => lazy(() => import('./pages/MarketingPages').then((m) => ({ default: m[name] })));
 const HowItWorksPage = marketing('HowItWorksPage');
 const ForCompaniesPage = marketing('ForCompaniesPage');
@@ -162,6 +163,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/auth" element={<GuestOnly><Page><AuthPage /></Page></GuestOnly>} />
         <Route path="/about" element={<Page><AboutPage /></Page>} />
+        <Route path="/forgot-password" element={<GuestOnly><Page><ForgotPasswordPage /></Page></GuestOnly>} />
         <Route path="/how-it-works" element={<Page><HowItWorksPage /></Page>} />
         <Route path="/for-companies" element={<Page><ForCompaniesPage /></Page>} />
         <Route path="/for-job-seekers" element={<Page><ForJobSeekersPage /></Page>} />

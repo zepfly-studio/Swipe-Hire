@@ -321,6 +321,8 @@ Legend:
 | POST `/api/auth/login` | fromApp, limiter | `{email, password}` | 200 session (+token) | 401 "Incorrect email or password". Login works when unverified; check `user.emailVerified` |
 | POST `/api/auth/email/send` | A | none | `{verified:true}` if already verified, else `{sentTo, retryIn (s), devCode?}` | 429, 502 (see 1.4) |
 | POST `/api/auth/email/verify` | A | `{code}` | session (no token) | 400 "This code has expired. Tap \"Send a new code\"." (`field:code`), 429 daily fails / 5 tries, 400 "Wrong code, please check and try again" (`field:code`) |
+| POST `/api/auth/password/forgot` | — | `{email}` | `{message, retryIn?, devCode?}`. Same answer whether or not the email has an account; emails a 6-digit code (15 min). `devCode` only in testing mode | 400 bad email (`field:email`), 429 more than 5 codes a day, 502 email could not be sent |
+| POST `/api/auth/password/reset` | — | `{email, code, password}` (≥6) | session + token (signs in; every other login ends) | 400 "This code has expired. Ask for a new one." / "Wrong code…" (`field:code`), 400 short password (`field:password`), 429 after 5 wrong tries |
 | POST `/api/auth/logout` | none | | `{ok:true}` | Clears the cookie only |
 | POST `/api/auth/logout-all` | A | | `{ok:true}` | `tokenVersion++`: all tokens invalidated |
 | GET `/api/auth/me` | A | | session | Does not need verification |

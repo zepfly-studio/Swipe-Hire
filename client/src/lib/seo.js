@@ -49,6 +49,7 @@ const PRIVATE_TITLES = {
   '/candidate': 'My dashboard',
   '/candidate/onboarding': 'My profile',
   '/company/onboarding': 'Company setup',
+  '/forgot-password': 'Forgot password',
   '/company/swipe': 'Swipe candidates',
   '/company/jobs': 'Jobs',
   '/company/shortlisted': 'Shortlisted',

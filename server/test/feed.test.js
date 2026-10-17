@@ -3,28 +3,14 @@
 // Run: npm test  (from the server folder)
 import { after, before, test } from 'node:test';
 import assert from 'node:assert/strict';
-import { spawn } from 'node:child_process';
-import { fileURLToPath } from 'node:url';
-import mongoose from 'mongoose';
-import { MongoMemoryServer } from 'mongodb-memory-server';
 import { User } from '../src/models/User.js';
 import { CandidateProfile } from '../src/models/CandidateProfile.js';
+import { startTestApi } from './helpers.js';
 
-const PORT = 5099;
-const API = `http://localhost:${PORT}/api`;
-let mongod;
-let server;
+let api;
 let token;
 const ids = {}; // letter -> candidate user id
-
-async function call(method, url, body) {
-  const res = await fetch(API + url, {
-    method,
-    headers: { 'Content-Type': 'application/json', 'X-Auth-Mode': 'token', ...(token && { Authorization: `Bearer ${token}` }) },
-    body: body && JSON.stringify(body),
-  });
-  return { status: res.status, data: await res.json().catch(() => null) };
-}
+const call = (method, url, body) => api.call(method, url, body, token);
 
 // Candidates straight into the database (the feed only reads live, finished profiles).
 const SKILLS = ['HTML', 'CSS', 'JavaScript', 'React'];
@@ -39,40 +25,18 @@ const PEOPLE = {
   R: { headline: 'Web Developer', location: 'Delhi', experienceYears: 3, expectedSalary: 5, workModes: ['remote'], skills: SKILLS },
   S: { headline: 'Web Developer', location: 'Jaipur', experienceYears: 3, currentSalary: 9, expectedSalary: 10, skills: SKILLS },
 };
-
 before(async () => {
-  mongod = await MongoMemoryServer.create();
-  const uri = mongod.getUri('feedtest');
-  await mongoose.connect(uri);
+  api = await startTestApi(5099);
   for (const [letter, p] of Object.entries(PEOPLE)) {
     const u = await User.create({ name: `Cand ${letter}`, email: `cand-${letter.toLowerCase()}@feed.test`, password: 'x'.repeat(60), role: 'candidate', emailVerified: true });
     await CandidateProfile.create({ user: u._id, step: 3, ...p });
     ids[letter] = String(u._id);
   }
-  // Empty mail settings so nothing is ever sent; codes are shown on screen instead.
-  const env = {
-    ...process.env, PORT: String(PORT), MONGO_URI: uri, NODE_ENV: 'test', JWT_SECRET: 'feed-test-secret-feed-test-secret-1234',
-    SHOW_EMAIL_CODE: 'true', RESEND_API_KEY: '', BREVO_API_KEY: '', SMTP_HOST: '', SMTP_PASS: '', CLOUDINARY_URL: '', CLOUDINARY_CLOUD_NAME: '',
-    CLIENT_URL: 'http://localhost:5173', DEMO_PAYMENTS: 'true',
-  };
-  server = spawn(process.execPath, ['src/index.js'], { cwd: fileURLToPath(new URL('..', import.meta.url)), env, stdio: 'pipe' });
-  await new Promise((resolve, reject) => {
-    const t = setTimeout(() => reject(new Error('API did not start')), 30000);
-    server.stdout.on('data', (d) => String(d).includes('running on') && (clearTimeout(t), resolve()));
-    server.on('exit', (c) => reject(new Error(`API exited (${c})`)));
-  });
-  const reg = await call('POST', '/auth/register', { name: 'Feed Co', email: 'hr@feed.test', password: 'secret12', role: 'company' });
-  token = reg.data.token;
-  const code = await call('POST', '/auth/email/send');
-  await call('POST', '/auth/email/verify', { code: code.data.devCode });
+  token = await api.signUp('Feed Co', 'hr@feed.test', 'company');
   await call('PUT', '/company/profile', { companyName: 'Feed Co', industry: 'IT / Software', companySize: '11–50', location: 'Jaipur', phone: '9876543210', contactEmail: 'hr@feed.test' });
 });
 
-after(async () => {
-  server?.kill();
-  await mongoose.disconnect();
-  await mongod?.stop();
-});
+after(() => api?.stop());
 
 const letters = (cards) => cards.map((c) => Object.keys(ids).find((k) => ids[k] === c.id)).join('');
 const feed = async (q, exclude = []) => {

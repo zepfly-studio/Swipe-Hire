@@ -23,6 +23,11 @@ const userSchema = new mongoose.Schema(
     suspended: { type: Boolean, default: false, index: true },
     // Admin panel access below the ADMIN_EMAILS super admins (set by a super admin).
     adminRole: { type: String, enum: ['moderator', 'support', 'finance'] },
+    // "Forgot password": a hashed 6-digit code emailed to the account, with daily limits.
+    resetOtp: {
+      type: { hash: String, expires: Date, sentAt: Date, tries: Number, sends: Number, windowStart: Date },
+      select: false,
+    },
     // Second step of the admin login: a one-time code emailed to the admin.
     adminOtp: { type: { hash: String, expires: Date, tries: Number }, select: false },
     // Bumped on password change / "log out everywhere": every older login stops working.
